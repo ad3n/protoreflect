@@ -4,7 +4,7 @@
 package pkg
 
 import (
-	sourceinfo "github.com/jhump/protoreflect/v2/sourceinfo"
+	sourceinfo "github.com/ad3n/protoreflect/v2/sourceinfo"
 )
 
 func init() {

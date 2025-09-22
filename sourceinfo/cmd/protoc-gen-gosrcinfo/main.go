@@ -61,7 +61,7 @@ func generateSourceInfo(f *protogen.File, plugin *protogen.Plugin) error {
 		return fmt.Errorf("failed to compress source code info: %w", err)
 	}
 
-	srcInfoPkg := protogen.GoImportPath("github.com/jhump/protoreflect/v2/sourceinfo")
+	srcInfoPkg := protogen.GoImportPath("github.com/ad3n/protoreflect/v2/sourceinfo")
 
 	out.P("func init() {")
 	out.P("  srcInfo := []byte{")

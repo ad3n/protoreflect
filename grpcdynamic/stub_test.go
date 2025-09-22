@@ -14,9 +14,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/jhump/protoreflect/v2/grpcreflect"
-	grpctesting "github.com/jhump/protoreflect/v2/internal/testing"
-	grpctestprotos "github.com/jhump/protoreflect/v2/internal/testprotos/grpc"
+	"github.com/ad3n/protoreflect/v2/grpcreflect"
+	grpctesting "github.com/ad3n/protoreflect/v2/internal/testing"
+	grpctestprotos "github.com/ad3n/protoreflect/v2/internal/testprotos/grpc"
 )
 
 var (

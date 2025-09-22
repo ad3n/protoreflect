@@ -10,9 +10,9 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	"github.com/jhump/protoreflect/v2/internal/fielddefault"
-	"github.com/jhump/protoreflect/v2/protomessage"
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/internal/fielddefault"
+	"github.com/ad3n/protoreflect/v2/protomessage"
 )
 
 // FieldBuilder is a builder used to construct a protoreflect.FieldDescriptor. A field

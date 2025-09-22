@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/known/typepb"
 
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 // TypeFetcher is a value that knows how to fetch type definitions for a URL.

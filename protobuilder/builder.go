@@ -3,13 +3,14 @@ package protobuilder
 import (
 	"bytes"
 	"fmt"
-	"reflect"
+
+	"github.com/goccy/go-reflect"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 // Builder is the core interface implemented by all descriptor builders. It

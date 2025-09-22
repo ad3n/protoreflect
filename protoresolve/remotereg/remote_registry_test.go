@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"reflect"
 	"testing"
+
+	"github.com/goccy/go-reflect"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -24,9 +25,9 @@ import (
 	"google.golang.org/protobuf/types/known/typepb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/jhump/protoreflect/v2/internal/testprotos"
-	"github.com/jhump/protoreflect/v2/protoresolve"
-	. "github.com/jhump/protoreflect/v2/protoresolve/remotereg"
+	"github.com/ad3n/protoreflect/v2/internal/testprotos"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
+	. "github.com/ad3n/protoreflect/v2/protoresolve/remotereg"
 )
 
 func TestRemoteRegistry_Basic(t *testing.T) {

@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	_ "github.com/jhump/protoreflect/v2/internal/testprotos"
-	"github.com/jhump/protoreflect/v2/sourceinfo"
+	_ "github.com/ad3n/protoreflect/v2/internal/testprotos"
+	"github.com/ad3n/protoreflect/v2/sourceinfo"
 )
 
 func TestRegistry(t *testing.T) {

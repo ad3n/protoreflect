@@ -13,8 +13,8 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 
-	testprotos "github.com/jhump/protoreflect/v2/internal/testprotos"
-	pkg "github.com/jhump/protoreflect/v2/internal/testprotos/pkg"
+	testprotos "github.com/ad3n/protoreflect/v2/internal/testprotos"
+	pkg "github.com/ad3n/protoreflect/v2/internal/testprotos/pkg"
 )
 
 // This is a compile-time assertion to ensure that this generated file

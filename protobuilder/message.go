@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	"github.com/jhump/protoreflect/v2/protomessage"
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/protomessage"
 )
 
 // FieldRange is a range of field numbers. The first element is the start

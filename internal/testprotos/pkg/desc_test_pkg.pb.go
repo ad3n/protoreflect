@@ -7,9 +7,10 @@
 package pkg
 
 import (
-	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	reflect "github.com/goccy/go-reflect"
 
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -159,7 +160,7 @@ const file_pkg_desc_test_pkg_proto_rawDesc = "" +
 	"\x03PQR\x10\x05\x12\a\n" +
 	"\x03STU\x10\x06\x12\a\n" +
 	"\x03VWX\x10\a\x12\a\n" +
-	"\x03Y_Z\x10\bB>Z<github.com/jhump/protoreflect/v2/internal/testprotos/pkg;pkg"
+	"\x03Y_Z\x10\bB>Z<github.com/ad3n/protoreflect/v2/internal/testprotos/pkg;pkg"
 
 var (
 	file_pkg_desc_test_pkg_proto_rawDescOnce sync.Once

@@ -5,7 +5,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 // GetEdition returns the edition for the given file. If it cannot be determined,

@@ -32,7 +32,7 @@ fi
 
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.9
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
-go install github.com/jhump/protoreflect/v2/sourceinfo/cmd/protoc-gen-gosrcinfo
+go install github.com/ad3n/protoreflect/v2/sourceinfo/cmd/protoc-gen-gosrcinfo
 
 # Output directory will effectively be GOPATH/src.
 outdir="."

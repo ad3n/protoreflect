@@ -3,8 +3,8 @@ package protoprint
 import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	"github.com/jhump/protoreflect/v2/sourceloc"
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/sourceloc"
 )
 
 type sourceLocations struct {

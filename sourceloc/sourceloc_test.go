@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	prototesting "github.com/jhump/protoreflect/v2/internal/testing"
-	. "github.com/jhump/protoreflect/v2/sourceloc"
+	"github.com/ad3n/protoreflect/v2/internal"
+	prototesting "github.com/ad3n/protoreflect/v2/internal/testing"
+	. "github.com/ad3n/protoreflect/v2/sourceloc"
 )
 
 func TestIsZero(t *testing.T) {

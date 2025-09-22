@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 const defaultBaseURL = "type.googleapis.com"

@@ -7,8 +7,9 @@
 package nopkg
 
 import (
-	reflect "reflect"
 	unsafe "unsafe"
+
+	reflect "github.com/goccy/go-reflect"
 
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -25,7 +26,7 @@ var File_nopkg_desc_test_nopkg_proto protoreflect.FileDescriptor
 
 const file_nopkg_desc_test_nopkg_proto_rawDesc = "" +
 	"\n" +
-	"\x1bnopkg/desc_test_nopkg.proto\x1a\x1fnopkg/desc_test_nopkg_new.protoBBZ@github.com/jhump/protoreflect/v2/internal/testprotos/nopkg;nopkgP\x00"
+	"\x1bnopkg/desc_test_nopkg.proto\x1a\x1fnopkg/desc_test_nopkg_new.protoBBZ@github.com/ad3n/protoreflect/v2/internal/testprotos/nopkg;nopkgP\x00"
 
 var file_nopkg_desc_test_nopkg_proto_goTypes = []any{}
 var file_nopkg_desc_test_nopkg_proto_depIdxs = []int32{

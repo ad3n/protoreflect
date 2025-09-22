@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/internal/reparse"
-	"github.com/jhump/protoreflect/v2/internal/sort"
+	"github.com/ad3n/protoreflect/v2/internal/reparse"
+	"github.com/ad3n/protoreflect/v2/internal/sort"
 )
 
 // Registry implements the full Resolver interface defined in this package. It is

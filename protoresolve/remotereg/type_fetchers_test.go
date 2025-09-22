@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/sourcecontextpb"
 	"google.golang.org/protobuf/types/known/typepb"
 
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 func TestCachingTypeFetcher(t *testing.T) {

@@ -7,11 +7,12 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/goccy/go-reflect"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -19,11 +20,11 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	"github.com/jhump/protoreflect/v2/internal/register"
-	"github.com/jhump/protoreflect/v2/protodescs"
-	"github.com/jhump/protoreflect/v2/protomessage"
-	"github.com/jhump/protoreflect/v2/sourceloc"
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/internal/register"
+	"github.com/ad3n/protoreflect/v2/protodescs"
+	"github.com/ad3n/protoreflect/v2/protomessage"
+	"github.com/ad3n/protoreflect/v2/sourceloc"
 )
 
 // Printer knows how to format file descriptors as proto source code. Its fields

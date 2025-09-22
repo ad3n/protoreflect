@@ -3,7 +3,7 @@ package protodescs
 import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/internal/sort"
+	"github.com/ad3n/protoreflect/v2/internal/sort"
 )
 
 // SortFiles topologically sorts the given file descriptor protos. It returns

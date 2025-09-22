@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/goccy/go-reflect"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
@@ -25,8 +26,8 @@ import (
 	"google.golang.org/protobuf/types/known/typepb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 // DescriptorConverter is a type that can be used to convert between descriptors and the

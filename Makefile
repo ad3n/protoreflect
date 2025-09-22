@@ -59,7 +59,7 @@ generate:
 	@go install golang.org/x/tools/cmd/goimports@v0.37.0
 	go generate ./...
 	go generate ./internal/testprotos
-	goimports -w -local github.com/jhump/protoreflect/v2 .
+	goimports -w -local github.com/ad3n/protoreflect/v2 .
 
 .PHONY: checkgenerate
 checkgenerate: generate

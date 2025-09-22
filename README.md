@@ -1,11 +1,11 @@
 # Protocol Buffer and gRPC Reflection
 [![Build Status](https://circleci.com/gh/jhump/protoreflect/tree/v2.svg?style=svg)](https://circleci.com/gh/jhump/protoreflect/tree/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jhump/protoreflect)](https://goreportcard.com/report/github.com/jhump/protoreflect)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ad3n/protoreflect)](https://goreportcard.com/report/github.com/ad3n/protoreflect)
 
 This repo builds on top of the reflection capabilities in the [Protobuf runtime for Go](https://pkg.go.dev/google.golang.org/protobuf/reflect/protoreflect)
 and also provides reflection APIs for [gRPC](https://grpc.io/) as well.
 
-[![GoDoc](https://pkg.go.dev/badge/github.com/jhump/protoreflect/v2.svg)](https://pkg.go.dev/github.com/jhump/protoreflect/v2)
+[![GoDoc](https://pkg.go.dev/badge/github.com/ad3n/protoreflect/v2.svg)](https://pkg.go.dev/github.com/ad3n/protoreflect/v2)
 
 > [!NOTE]
 > Version 2.0.0 is still a work in progress. It is basically feature complete, but still needs more tests
@@ -13,7 +13,7 @@ and also provides reflection APIs for [gRPC](https://grpc.io/) as well.
 >
 > You can try it out by getting a pre-release version:
 > ```
-> go get github.com/jhump/protoreflect/v2@v2.0.0-beta.2
+> go get github.com/ad3n/protoreflect/v2@v2.0.0-beta.2
 > ```
 >
 > Note that the APIs may change a little bit between now and a final v2.0.0 release. Also note
@@ -33,7 +33,7 @@ These wrappers make descriptors *much* more useful and easier to use.
 This repo provides some additional packages for using and interacting with descriptors.
 
 ```go
-import "github.com/jhump/protoreflect/v2/protoprint"
+import "github.com/ad3n/protoreflect/v2/protoprint"
 ```
 
 The `protoprint` package allows for printing of descriptors to `.proto` source files. This is
@@ -41,10 +41,10 @@ effectively the inverse of a parser/compiler (such as the [`protocompile`](https
 package.) Combined with the `protobuilder` package, this is a useful tool for programmatically
 generating protocol buffer sources.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/protoprint)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/protoprint)*
 
 ```go
-import "github.com/jhump/protoreflect/v2/protobuilder"
+import "github.com/ad3n/protoreflect/v2/protobuilder"
 ```
 
 The `protobuilder` package allows for programmatic construction of rich descriptors. Descriptors can
@@ -56,10 +56,10 @@ So this package provides generous API to greatly simplify that task. It also all
 rich descriptors into builders, which means you can programmatically modify/tweak existing
 descriptors.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/protobuilder)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/protobuilder)*
 
 ```go
-import "github.com/jhump/protoreflect/v2/protoresolve"
+import "github.com/ad3n/protoreflect/v2/protoresolve"
 ```
 
 The `protoresolve` package provides named interfaces for many kinds of resolvers. It also provides
@@ -70,24 +70,24 @@ set of types for resolving elements in Protobuf schemas and effectively _extend_
 the [`protoregistry`](https://pkg.go.dev/google.golang.org/protobuf/reflect/protoregistry) package
 provided by the Protobuf Go runtime.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/protoresolve)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/protoresolve)*
 
 ```go
-import "github.com/jhump/protoreflect/v2/protomessage"
+import "github.com/ad3n/protoreflect/v2/protomessage"
 ```
 
 The `protomessage` package contains helpers for work with `proto.Message` instances from generic
 and/or dynamic code.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/protomessage)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/protomessage)*
 
 ```go
-import "github.com/jhump/protoreflect/v2/protodescs"
+import "github.com/ad3n/protoreflect/v2/protodescs"
 ```
 
 The `protodescs` package contains miscellaneous helpers for working with descriptors.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/protodescs)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/protodescs)*
 
 ----
 ## Source Code Info
@@ -101,7 +101,7 @@ This repo includes some APIs to help work with source code info and also a mecha
 for restoring the source code information to the descriptors embedded in generated Go code.
 
 ```go
-import "github.com/jhump/protoreflect/v2/sourceinfo"
+import "github.com/ad3n/protoreflect/v2/sourceinfo"
 ```
 
 The `sourceinfo` package contains APIs that for retrieving descriptors for generated types that include
@@ -111,16 +111,16 @@ package, you can access that information. The most immediate use of this informa
 comments for services, methods, and types to dynamic RPC clients that use the gRPC server reflection
 service.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/sourceinfo)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/sourceinfo)*
 
 ```go
-import "github.com/jhump/protoreflect/v2/sourceloc"
+import "github.com/ad3n/protoreflect/v2/sourceloc"
 ```
 
 The `sourceloc` package contains helpers for working with instances of `protoreflect.SourceLocation`
 and `protoreflect.SourcePath`.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/sourceloc)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/sourceloc)*
 
 ----
 ## Dynamic RPC Stubs
@@ -137,19 +137,19 @@ also use RPC schemas dynamically. This enables invoking RPCs without having any 
 RPC service to be used.
 
 ```go
-import "github.com/jhump/protoreflect/v2/grpcdynamic"
+import "github.com/ad3n/protoreflect/v2/grpcdynamic"
 ```
 
 The `grpcdynamic` package provides the dynamic stub implementation. The stub can be used to issue
 RPC methods using method descriptors instead of generated client interfaces.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/grpcdynamic)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/grpcdynamic)*
 
 ----
 ## gRPC Server Reflection
 
 ```go
-import "github.com/jhump/protoreflect/v2/grpcreflect"
+import "github.com/ad3n/protoreflect/v2/grpcreflect"
 ```
 
 The `grpcreflect` package provides an easy-to-use client for the
@@ -159,4 +159,4 @@ making it much easier to query for and work with the schemas of remote services.
 It also provides some helper methods for querying for rich service descriptors for the
 services registered in a gRPC server.
 
-*[Read more ≫](https://pkg.go.dev/github.com/jhump/protoreflect/v2/grpcreflect)*
+*[Read more ≫](https://pkg.go.dev/github.com/ad3n/protoreflect/v2/grpcreflect)*

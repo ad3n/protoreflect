@@ -4,7 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/jhump/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/internal"
 )
 
 // ReparseUnrecognized uses the given resolver to re-parse any unrecognized

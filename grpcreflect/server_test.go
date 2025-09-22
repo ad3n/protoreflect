@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	testprotosgrpc "github.com/jhump/protoreflect/v2/internal/testprotos/grpc"
+	testprotosgrpc "github.com/ad3n/protoreflect/v2/internal/testprotos/grpc"
 )
 
 type testService struct {

@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	"github.com/jhump/protoreflect/v2/internal/testprotos"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/internal/testprotos"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 func TestFindExtensionByNumber(t *testing.T) {

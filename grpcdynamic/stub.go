@@ -16,8 +16,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protoreflect/v2/protomessage"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/protomessage"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 // Stub is an RPC client stub, used for dynamically dispatching RPCs to a server.

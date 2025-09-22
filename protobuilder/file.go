@@ -12,10 +12,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/internal"
-	"github.com/jhump/protoreflect/v2/protodescs"
-	"github.com/jhump/protoreflect/v2/protomessage"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/protodescs"
+	"github.com/ad3n/protoreflect/v2/protomessage"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 var uniqueFileCounter uint64

@@ -19,8 +19,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	prototesting "github.com/jhump/protoreflect/v2/internal/testing"
-	_ "github.com/jhump/protoreflect/v2/internal/testprotos"
+	prototesting "github.com/ad3n/protoreflect/v2/internal/testing"
+	_ "github.com/ad3n/protoreflect/v2/internal/testprotos"
 )
 
 const (

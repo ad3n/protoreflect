@@ -11,10 +11,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	prototesting "github.com/jhump/protoreflect/v2/internal/testing"
-	"github.com/jhump/protoreflect/v2/protomessage"
-	"github.com/jhump/protoreflect/v2/protoresolve"
-	"github.com/jhump/protoreflect/v2/sourceloc"
+	prototesting "github.com/ad3n/protoreflect/v2/internal/testing"
+	"github.com/ad3n/protoreflect/v2/protomessage"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/sourceloc"
 )
 
 func TestWalk(t *testing.T) {

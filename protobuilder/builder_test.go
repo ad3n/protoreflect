@@ -23,8 +23,8 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	_ "github.com/jhump/protoreflect/v2/internal/testprotos"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	_ "github.com/ad3n/protoreflect/v2/internal/testprotos"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 func TestSimpleDescriptorsFromScratch(t *testing.T) {

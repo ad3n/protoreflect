@@ -7,9 +7,10 @@
 package nopkg
 
 import (
-	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	reflect "github.com/goccy/go-reflect"
 
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -200,7 +201,7 @@ const file_nopkg_desc_test_nopkg_new_proto_rawDesc = "" +
 	"\x01t\x18\f \x01(\x01R\x01t\x12\f\n" +
 	"\x01u\x18\r \x01(\fR\x01u\x12\f\n" +
 	"\x01v\x18\x0e \x01(\tR\x01v\x12\f\n" +
-	"\x01w\x18\x0f \x01(\bR\x01w*\x05\bd\x10\xe9\aBBZ@github.com/jhump/protoreflect/v2/internal/testprotos/nopkg;nopkg"
+	"\x01w\x18\x0f \x01(\bR\x01w*\x05\bd\x10\xe9\aBBZ@github.com/ad3n/protoreflect/v2/internal/testprotos/nopkg;nopkg"
 
 var (
 	file_nopkg_desc_test_nopkg_new_proto_rawDescOnce sync.Once

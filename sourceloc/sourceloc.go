@@ -5,7 +5,7 @@ package sourceloc
 import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/jhump/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/internal"
 )
 
 // IsZero returns true if loc is a zero-value SourceLocation.

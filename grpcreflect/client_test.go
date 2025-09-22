@@ -37,8 +37,8 @@ import (
 	_ "google.golang.org/protobuf/types/known/typepb"
 	_ "google.golang.org/protobuf/types/pluginpb"
 
-	testprotosgrpc "github.com/jhump/protoreflect/v2/internal/testprotos/grpc"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	testprotosgrpc "github.com/ad3n/protoreflect/v2/internal/testprotos/grpc"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 var clientv1, clientv1alpha *Client

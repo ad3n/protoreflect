@@ -7,14 +7,15 @@
 package testprotos
 
 import (
-	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	reflect "github.com/goccy/go-reflect"
 
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 
-	pkg "github.com/jhump/protoreflect/v2/internal/testprotos/pkg"
+	pkg "github.com/ad3n/protoreflect/v2/internal/testprotos/pkg"
 )
 
 const (

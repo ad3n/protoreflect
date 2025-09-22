@@ -3,8 +3,8 @@ package protomessage
 import (
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jhump/protoreflect/v2/internal/reparse"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/internal/reparse"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 // ReparseUnrecognized is a helper function for re-parsing unknown fields of a message,

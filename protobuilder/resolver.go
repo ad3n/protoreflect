@@ -2,8 +2,9 @@ package protobuilder
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
+
+	"github.com/goccy/go-reflect"
 
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
@@ -12,8 +13,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protoreflect/v2/internal/register"
-	"github.com/jhump/protoreflect/v2/protoresolve"
+	"github.com/ad3n/protoreflect/v2/internal/register"
+	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
 type dependencies struct {
