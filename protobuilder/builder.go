@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/goccy/go-reflect"
+	"reflect"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -135,10 +134,10 @@ func setComments(c *Comments, loc protoreflect.SourceLocation) {
 func addCommentsTo(sourceInfo *descriptorpb.SourceCodeInfo, path []int32, c *Comments) {
 	var lead, trail *string
 	if c.LeadingComment != "" {
-		lead = proto.String(c.LeadingComment)
+		lead = new(c.LeadingComment)
 	}
 	if c.TrailingComment != "" {
-		trail = proto.String(c.TrailingComment)
+		trail = new(c.TrailingComment)
 	}
 
 	// we need defensive copies of the slices
@@ -398,7 +397,7 @@ func getRoot(b Builder) Builder {
 // given slice. The slice's elements can be any builder type. The parameter has
 // type interface{} so it can accept []*MessageBuilder or []*FieldBuilder, for
 // example. It returns a value of the same type with the named builder omitted.
-func deleteBuilder(name protoreflect.Name, descs interface{}) interface{} {
+func deleteBuilder(name protoreflect.Name, descs any) any {
 	rv := reflect.ValueOf(descs)
 	for i := 0; i < rv.Len(); i++ {
 		c := rv.Index(i).Interface().(Builder)

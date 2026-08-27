@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -295,7 +294,7 @@ func (eb *EnumBuilder) buildProto(path []int32, sourceInfo *descriptorpb.SourceC
 				t++
 				tags = tags[1:]
 			}
-			needNumbersAssigned[0].Number = proto.Int32(int32(t))
+			needNumbersAssigned[0].Number = new(int32(t))
 			needNumbersAssigned = needNumbersAssigned[1:]
 			t++
 		}
@@ -304,8 +303,8 @@ func (eb *EnumBuilder) buildProto(path []int32, sourceInfo *descriptorpb.SourceC
 	resRanges := make([]*descriptorpb.EnumDescriptorProto_EnumReservedRange, len(eb.ReservedRanges))
 	for i, r := range eb.ReservedRanges {
 		resRanges[i] = &descriptorpb.EnumDescriptorProto_EnumReservedRange{
-			Start: proto.Int32(int32(r[0])),
-			End:   proto.Int32(int32(r[1])),
+			Start: new(int32(r[0])),
+			End:   new(int32(r[1])),
 		}
 	}
 	resNames := make([]string, len(eb.ReservedNames))
@@ -314,7 +313,7 @@ func (eb *EnumBuilder) buildProto(path []int32, sourceInfo *descriptorpb.SourceC
 	}
 
 	return &descriptorpb.EnumDescriptorProto{
-		Name:          proto.String(string(eb.name)),
+		Name:          new(string(eb.name)),
 		Options:       eb.Options,
 		Value:         values,
 		ReservedRange: resRanges,
@@ -486,8 +485,8 @@ func (evb *EnumValueBuilder) buildProto(path []int32, sourceInfo *descriptorpb.S
 	addCommentsTo(sourceInfo, path, &evb.comments)
 
 	return &descriptorpb.EnumValueDescriptorProto{
-		Name:    proto.String(string(evb.name)),
-		Number:  proto.Int32(int32(evb.number)),
+		Name:    new(string(evb.name)),
+		Number:  new(int32(evb.number)),
 		Options: evb.Options,
 	}, nil
 }

@@ -226,9 +226,8 @@ func HttpTypeFetcher(transport http.RoundTripper, szLimit, parLimit int) TypeFet
 		}
 
 		// download the response, up to the given size limit, into a buffer
-		buf := bufferPool.Get().(*bytes.Buffer)
-		defer bufferPool.Put(buf)
-		buf.Reset()
+		buf := getBuffer()
+		defer putBuffer(buf)
 		body := io.LimitReader(resp.Body, int64(szLimit+1))
 		n, err := buf.ReadFrom(body)
 		if err != nil {
@@ -254,7 +253,29 @@ func HttpTypeFetcher(transport http.RoundTripper, szLimit, parLimit int) TypeFet
 	}))
 }
 
-var bufferPool = sync.Pool{New: func() interface{} {
-	buf := make([]byte, 8192)
-	return bytes.NewBuffer(buf)
+const (
+	initialBufferCapacity   = 8 << 10
+	maxPooledBufferCapacity = 64 << 10
+)
+
+var bufferPool = sync.Pool{New: func() any {
+	return bytes.NewBuffer(make([]byte, 0, initialBufferCapacity))
 }}
+
+func getBuffer() *bytes.Buffer {
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	return buf
+}
+
+func putBuffer(buf *bytes.Buffer) {
+	// A response near a large caller-supplied limit can grow the buffer
+	// substantially. Do not retain such backing arrays indefinitely: besides
+	// reducing memory pressure, this bounds the amount of old response data
+	// kept reachable by the process.
+	if buf.Cap() > maxPooledBufferCapacity {
+		return
+	}
+	buf.Reset()
+	bufferPool.Put(buf)
+}

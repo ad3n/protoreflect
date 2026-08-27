@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goccy/go-reflect"
+	"reflect"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -364,7 +364,7 @@ func (cr *Client) getAndCacheFileDescriptors(req *refv1.ServerReflectionRequest,
 
 	fdResp := resp.GetFileDescriptorResponse()
 	if fdResp == nil {
-		return nil, &ProtocolError{reflect.TypeOf(fdResp).Elem()}
+		return nil, &ProtocolError{reflect.TypeFor[refv1.FileDescriptorResponse]()}
 	}
 
 	// Response can contain the result file descriptor, but also its transitive
@@ -503,7 +503,7 @@ func (cr *Client) AllExtensionNumbersForType(extendedMessageName protoreflect.Fu
 
 	extResp := resp.GetAllExtensionNumbersResponse()
 	if extResp == nil {
-		return nil, &ProtocolError{reflect.TypeOf(extResp).Elem()}
+		return nil, &ProtocolError{reflect.TypeFor[refv1.ExtensionNumberResponse]()}
 	}
 	nums := make([]protoreflect.FieldNumber, len(extResp.ExtensionNumber))
 	for i := range extResp.ExtensionNumber {
@@ -546,7 +546,7 @@ func (cr *Client) ListServices() ([]protoreflect.FullName, error) {
 
 	listResp := resp.GetListServicesResponse()
 	if listResp == nil {
-		return nil, &ProtocolError{reflect.TypeOf(listResp).Elem()}
+		return nil, &ProtocolError{reflect.TypeFor[refv1.ListServiceResponse]()}
 	}
 	serviceNames := make([]protoreflect.FullName, len(listResp.Service))
 	for i, s := range listResp.Service {

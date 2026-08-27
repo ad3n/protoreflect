@@ -1,10 +1,9 @@
 module github.com/ad3n/protoreflect/v2
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/bufbuild/protocompile v0.14.1
-	github.com/goccy/go-reflect v1.2.0
 	github.com/google/go-cmp v0.7.0
 	github.com/jhump/protoreflect v1.17.0
 	github.com/stretchr/testify v1.9.0

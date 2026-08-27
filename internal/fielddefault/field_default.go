@@ -1,7 +1,6 @@
 package fielddefault
 
 import (
-	"bytes"
 	"fmt"
 	"math"
 	"strconv"
@@ -59,36 +58,61 @@ func DefaultValue(fld protoreflect.FieldDescriptor) string {
 }
 
 func encodeDefaultBytes(data []byte) string {
-	var buf bytes.Buffer
+	buf := make([]byte, 0, escapedBytesLen(data))
+	buf = appendDefaultBytes(buf, data)
+	return string(buf)
+}
+
+// appendDefaultBytes appends data using protoc's C-escape representation.
+// Callers that reuse a sufficiently large destination buffer incur no
+// allocations. It intentionally avoids unsafe string/byte aliasing so the
+// returned data always has clear ownership.
+func appendDefaultBytes(dst, data []byte) []byte {
 	// This uses the same algorithm as the protoc C++ code for escaping strings.
 	// The protoc C++ code in turn uses the abseil C++ library's CEscape function:
 	//  https://github.com/abseil/abseil-cpp/blob/934f613818ffcb26c942dff4a80be9a4031c662c/absl/strings/escaping.cc#L406
 	for _, c := range data {
 		switch c {
 		case '\n':
-			buf.WriteString("\\n")
+			dst = append(dst, '\\', 'n')
 		case '\r':
-			buf.WriteString("\\r")
+			dst = append(dst, '\\', 'r')
 		case '\t':
-			buf.WriteString("\\t")
+			dst = append(dst, '\\', 't')
 		case '"':
-			buf.WriteString("\\\"")
+			dst = append(dst, '\\', '"')
 		case '\'':
-			buf.WriteString("\\'")
+			dst = append(dst, '\\', '\'')
 		case '\\':
-			buf.WriteString("\\\\")
+			dst = append(dst, '\\', '\\')
 		default:
 			if c >= 0x20 && c < 0x7f {
 				// simple printable characters
-				buf.WriteByte(c)
+				dst = append(dst, c)
 			} else {
 				// use octal escape for all other values
-				buf.WriteRune('\\')
-				buf.WriteByte('0' + ((c >> 6) & 0x7))
-				buf.WriteByte('0' + ((c >> 3) & 0x7))
-				buf.WriteByte('0' + (c & 0x7))
+				dst = append(dst, '\\',
+					'0'+((c>>6)&0x7),
+					'0'+((c>>3)&0x7),
+					'0'+(c&0x7),
+				)
 			}
 		}
 	}
-	return buf.String()
+	return dst
+}
+
+func escapedBytesLen(data []byte) int {
+	length := len(data)
+	for _, c := range data {
+		switch c {
+		case '\n', '\r', '\t', '"', '\'', '\\':
+			length++
+		default:
+			if c < 0x20 || c >= 0x7f {
+				length += 3
+			}
+		}
+	}
+	return length
 }
