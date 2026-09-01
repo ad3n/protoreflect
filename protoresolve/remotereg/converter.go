@@ -450,30 +450,45 @@ func defaultValueString(k protoreflect.Kind, v protoreflect.Value, evd protorefl
 		return v.String()
 	case protoreflect.BytesKind:
 		b := v.Bytes()
-		s := make([]byte, 0, len(b))
+		escapedLen := len(b)
 		for _, c := range b {
 			switch c {
-			case '\n':
-				s = append(s, '\\', 'n')
-			case '\r':
-				s = append(s, '\\', 'r')
-			case '\t':
-				s = append(s, '\\', 't')
-			case '"':
-				s = append(s, '\\', '"')
-			case '\'':
-				s = append(s, '\\', '\'')
-			case '\\':
-				s = append(s, '\\', '\\')
+			case '\n', '\r', '\t', '"', '\'', '\\':
+				escapedLen++
 			default:
-				if printableASCII := c >= 0x20 && c <= 0x7e; printableASCII {
-					s = append(s, c)
-				} else {
-					s = append(s, fmt.Sprintf(`\%03o`, c)...)
+				if c < 0x20 || c > 0x7e {
+					escapedLen += 3
 				}
 			}
 		}
-		return string(s)
+		if escapedLen == len(b) {
+			return string(b)
+		}
+		var s strings.Builder
+		s.Grow(escapedLen)
+		for _, c := range b {
+			switch c {
+			case '\n':
+				s.WriteString(`\n`)
+			case '\r':
+				s.WriteString(`\r`)
+			case '\t':
+				s.WriteString(`\t`)
+			case '"', '\'', '\\':
+				s.WriteByte('\\')
+				s.WriteByte(c)
+			default:
+				if c >= 0x20 && c <= 0x7e {
+					s.WriteByte(c)
+				} else {
+					s.WriteByte('\\')
+					s.WriteByte('0' + ((c >> 6) & 0x7))
+					s.WriteByte('0' + ((c >> 3) & 0x7))
+					s.WriteByte('0' + (c & 0x7))
+				}
+			}
+		}
+		return s.String()
 	default:
 		return ""
 	}

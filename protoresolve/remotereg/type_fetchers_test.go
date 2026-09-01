@@ -171,6 +171,46 @@ func BenchmarkBufferPool(b *testing.B) {
 	}
 }
 
+func BenchmarkCachingTypeFetcherHit(b *testing.B) {
+	const typeURL = "type.googleapis.com/benchmark.Message"
+	fetcher := CachingTypeFetcher(TypeFetcherFunc(func(context.Context, string, bool) (proto.Message, error) {
+		return &typepb.Type{Name: "benchmark.Message"}, nil
+	}))
+	ctx := context.Background()
+	if _, err := fetcher.FetchMessageType(ctx, typeURL); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := fetcher.FetchMessageType(ctx, typeURL); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkCachingTypeFetcherHitParallel(b *testing.B) {
+	const typeURL = "type.googleapis.com/benchmark.Message"
+	fetcher := CachingTypeFetcher(TypeFetcherFunc(func(context.Context, string, bool) (proto.Message, error) {
+		return &typepb.Type{Name: "benchmark.Message"}, nil
+	}))
+	ctx := context.Background()
+	if _, err := fetcher.FetchMessageType(ctx, typeURL); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if _, err := fetcher.FetchMessageType(ctx, typeURL); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
 func TestHttpTypeFetcher_ParallelDownloads(t *testing.T) {
 	trt := &testRoundTripper{counts: map[string]int{}, delay: 100 * time.Millisecond}
 	fetcher := HttpTypeFetcher(trt, 65536, 10)
