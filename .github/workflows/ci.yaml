@@ -14,10 +14,12 @@ jobs:
   ci:
     name: ci (go:${{ matrix.go-version.name }})
     runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
     strategy:
       matrix:
         go-version:
-          - version: 1.27.x
+          - version: 1.27.3
             name: latest
           - version: 1.26.x
             name: previous

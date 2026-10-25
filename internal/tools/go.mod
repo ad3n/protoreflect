@@ -2,6 +2,8 @@ module github.com/ad3n/protoreflect/v2/internal/tools
 
 go 1.26.0
 
+toolchain go1.27.3
+
 tool (
 	github.com/gordonklaus/ineffassign
 	github.com/kisielk/errcheck

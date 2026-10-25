@@ -2,6 +2,8 @@ module github.com/ad3n/protoreflect/v2
 
 go 1.26.0
 
+toolchain go1.27.3
+
 require (
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/google/go-cmp v0.7.0
