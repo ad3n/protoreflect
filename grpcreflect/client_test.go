@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
+	"runtime"
 	"slices"
 	"sort"
 	"sync"
@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	refv1 "google.golang.org/grpc/reflection/grpc_reflection_v1"
 	refv1alpha "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
@@ -38,63 +37,45 @@ import (
 	_ "google.golang.org/protobuf/types/known/typepb"
 	_ "google.golang.org/protobuf/types/pluginpb"
 
+	prototesting "github.com/ad3n/protoreflect/v2/internal/testing"
 	testprotosgrpc "github.com/ad3n/protoreflect/v2/internal/testprotos/grpc"
 	"github.com/ad3n/protoreflect/v2/protoresolve"
 )
 
-var clientv1, clientv1alpha *Client
-
-func TestMain(m *testing.M) {
-	code := 1
-	defer func() {
-		p := recover()
-		if p != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "PANIC: %v\n", p)
-		}
-		os.Exit(code)
-	}()
-
-	svr := grpc.NewServer()
-	testprotosgrpc.RegisterDummyServiceServer(svr, testService{})
-	// support both v1 and v1alpha
-	reflection.Register(svr)
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		panic(fmt.Sprintf("Failed to open server socket: %s", err.Error()))
+// testVersions runs fn with clients for both the v1 and v1alpha versions of
+// the reflection service. Each uses a new server with the dummy service.
+func testVersions(t *testing.T, fn func(*testing.T, *Client)) {
+	t.Helper()
+	newClients := map[string]func(grpc.ClientConnInterface) *Client{
+		"v1": func(clientConn grpc.ClientConnInterface) *Client {
+			return NewClientV1(context.Background(), refv1.NewServerReflectionClient(clientConn))
+		},
+		"v1alpha": func(clientConn grpc.ClientConnInterface) *Client {
+			return NewClientV1Alpha(context.Background(), refv1alpha.NewServerReflectionClient(clientConn))
+		},
 	}
-	go func() {
-		_ = svr.Serve(l)
-	}()
-	defer svr.Stop()
-
-	// create grpc client
-	addr := l.Addr().String()
-	cconn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create grpc client: %s", err.Error()))
+	for name, newClient := range newClients {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			client := newClient(startDummyServer(t))
+			t.Cleanup(client.Reset)
+			fn(t, client)
+		})
 	}
-	defer func() {
-		_ = cconn.Close()
-	}()
-
-	stubv1alpha := refv1alpha.NewServerReflectionClient(cconn)
-	clientv1alpha = NewClientV1Alpha(context.Background(), stubv1alpha)
-	stubv1 := refv1.NewServerReflectionClient(cconn)
-	clientv1 = NewClientV1(context.Background(), stubv1)
-
-	code = m.Run()
 }
 
-func testVersions(t *testing.T, fn func(*testing.T, *Client)) {
-	t.Run("v1", func(t *testing.T) {
-		fn(t, clientv1)
-	})
-	t.Run("v1alpha", func(t *testing.T) {
-		fn(t, clientv1alpha)
-	})
+// startDummyServer starts a server with the dummy service and both versions of
+// the reflection service, and returns a connection to it.
+func startDummyServer(t *testing.T) *grpc.ClientConn {
+	t.Helper()
+	svr := grpc.NewServer()
+	testprotosgrpc.RegisterDummyServiceServer(svr, testService{})
+	reflection.Register(svr)
+	return prototesting.StartServer(t, svr)
 }
 
 func TestFileByFileName(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		fd, err := client.FileByFilename("desc_test1.proto")
 		require.NoError(t, err)
@@ -118,6 +99,7 @@ func TestFileByFileName(t *testing.T) {
 }
 
 func TestFileByFileNameForWellKnownProtos(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		wellKnownProtos := map[string][]protoreflect.FullName{
 			"google/protobuf/any.proto":             {"google.protobuf.Any"},
@@ -147,6 +129,7 @@ func TestFileByFileNameForWellKnownProtos(t *testing.T) {
 }
 
 func TestFileContainingSymbol(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		fd, err := client.FileContainingSymbol("TopLevel")
 		require.NoError(t, err)
@@ -174,6 +157,7 @@ func TestFileContainingSymbol(t *testing.T) {
 }
 
 func TestFileContainingExtension(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		fd, err := client.FileContainingExtension("TopLevel", 100)
 		require.NoError(t, err)
@@ -198,6 +182,7 @@ func TestFileContainingExtension(t *testing.T) {
 }
 
 func TestAllExtensionNumbersForType(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		nums, err := client.AllExtensionNumbersForType("TopLevel")
 		require.NoError(t, err)
@@ -225,6 +210,7 @@ func TestAllExtensionNumbersForType(t *testing.T) {
 }
 
 func TestListServices(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		s, err := client.ListServices()
 		require.NoError(t, err)
@@ -239,6 +225,7 @@ func TestListServices(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		_, err := client.ListServices()
 		require.NoError(t, err)
@@ -266,6 +253,7 @@ func TestReset(t *testing.T) {
 }
 
 func TestRecover(t *testing.T) {
+	t.Parallel()
 	testVersions(t, func(t *testing.T, client *Client) {
 		_, err := client.ListServices()
 		require.NoError(t, err)
@@ -283,27 +271,12 @@ func TestRecover(t *testing.T) {
 }
 
 func TestMultipleFiles(t *testing.T) {
+	t.Parallel()
 	svr := grpc.NewServer()
 	refv1alpha.RegisterServerReflectionServer(svr, testReflectionServer{})
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err, "failed to listen")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		defer cancel()
-		if err := svr.Serve(l); err != nil {
-			t.Logf("serve returned error: %v", err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond) // give server a chance to start
-	require.NoError(t, ctx.Err(), "failed to start server")
-	defer func() {
-		svr.Stop()
-	}()
-
-	cc, err := grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "failed to dial %v", l.Addr().String())
+	ctx := t.Context()
+	cc := prototesting.StartServer(t, svr)
 	cl := refv1alpha.NewServerReflectionClient(cc)
 
 	client := NewClientV1Alpha(ctx, cl)
@@ -320,6 +293,7 @@ func TestMultipleFiles(t *testing.T) {
 }
 
 func TestAllowMissingFileDescriptors(t *testing.T) {
+	t.Parallel()
 	svr := grpc.NewServer()
 	files := createFilesWithMissingDeps(t)
 	reflectionSvc := reflection.NewServer(reflection.ServerOptions{
@@ -328,31 +302,15 @@ func TestAllowMissingFileDescriptors(t *testing.T) {
 	})
 	refv1alpha.RegisterServerReflectionServer(svr, reflectionSvc)
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err, "failed to listen")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		defer cancel()
-		if err := svr.Serve(l); err != nil {
-			t.Logf("serve returned error: %v", err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond) // give server a chance to start
-	require.NoError(t, ctx.Err(), "failed to start server")
-	defer func() {
-		svr.Stop()
-	}()
-
-	cc, err := grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "failed to dial %v", l.Addr().String())
+	ctx := t.Context()
+	cc := prototesting.StartServer(t, svr)
 	cl := refv1alpha.NewServerReflectionClient(cc)
 
 	client := NewClientV1Alpha(ctx, cl)
 	defer client.Reset()
 
 	// First we try some things that should fail due to missing descriptors.
-	_, err = client.FileByFilename("foo/bar/this.proto")
+	_, err := client.FileByFilename("foo/bar/this.proto")
 	require.Error(t, err)
 	_, err = client.FileContainingSymbol("foo.bar.Bar")
 	require.Error(t, err)
@@ -376,27 +334,12 @@ func TestAllowMissingFileDescriptors(t *testing.T) {
 }
 
 func TestAllowFallbackResolver(t *testing.T) {
+	t.Parallel()
 	svr := grpc.NewServer()
 	reflection.RegisterV1(svr)
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err, "failed to listen")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		defer cancel()
-		if err := svr.Serve(l); err != nil {
-			t.Logf("serve returned error: %v", err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond) // give server a chance to start
-	require.NoError(t, ctx.Err(), "failed to start server")
-	defer func() {
-		svr.Stop()
-	}()
-
-	cc, err := grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "failed to dial %v", l.Addr().String())
+	ctx := t.Context()
+	cc := prototesting.StartServer(t, svr)
 	cl := refv1.NewServerReflectionClient(cc)
 
 	client := NewClientV1(ctx, cl)
@@ -431,10 +374,10 @@ func TestAllowFallbackResolver(t *testing.T) {
 			{
 				Name:     new("opt"),
 				Extendee: new(".google.protobuf.MessageOptions"),
-				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+				Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+				Type:     new(descriptorpb.FieldDescriptorProto_TYPE_MESSAGE),
 				TypeName: new(".foo.bar.Bar"),
-				Number:   proto.Int32(23456),
+				Number:   new(int32(23456)),
 			},
 		},
 	}
@@ -466,6 +409,7 @@ func TestAllowFallbackResolver(t *testing.T) {
 }
 
 func TestAllowFallbackResolver_ForDependency(t *testing.T) {
+	t.Parallel()
 	// Create resolver with some extra files.
 	fdp := &descriptorpb.FileDescriptorProto{
 		Name:       new("foo/bar/this.proto"),
@@ -480,10 +424,10 @@ func TestAllowFallbackResolver_ForDependency(t *testing.T) {
 			{
 				Name:     new("opt"),
 				Extendee: new(".google.protobuf.MessageOptions"),
-				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+				Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+				Type:     new(descriptorpb.FieldDescriptorProto_TYPE_MESSAGE),
 				TypeName: new(".foo.bar.Bar"),
-				Number:   proto.Int32(23456),
+				Number:   new(int32(23456)),
 			},
 		},
 	}
@@ -507,24 +451,8 @@ func TestAllowFallbackResolver_ForDependency(t *testing.T) {
 		},
 	)
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err, "failed to listen")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		defer cancel()
-		if err := svr.Serve(l); err != nil {
-			t.Logf("serve returned error: %v", err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond) // give server a chance to start
-	require.NoError(t, ctx.Err(), "failed to start server")
-	defer func() {
-		svr.Stop()
-	}()
-
-	cc, err := grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "failed to dial %v", l.Addr().String())
+	ctx := t.Context()
+	cc := prototesting.StartServer(t, svr)
 	cl := refv1.NewServerReflectionClient(cc)
 
 	client := NewClientV1(ctx, cl)
@@ -575,6 +503,7 @@ func TestAllowFallbackResolver_ForDependency(t *testing.T) {
 }
 
 func TestFileWithoutDeps(t *testing.T) {
+	t.Parallel()
 	fd := &descriptorpb.FileDescriptorProto{
 		Dependency: []string{
 			"foo/bar.proto",
@@ -693,6 +622,7 @@ func msgResponseForFiles(files ...string) *refv1alpha.ServerReflectionResponse_F
 }
 
 func TestAutoVersion(t *testing.T) {
+	t.Parallel()
 	t.Run("v1", func(t *testing.T) {
 		testClientAuto(t,
 			func(s *grpc.Server) {
@@ -762,24 +692,7 @@ func testClientAuto(t *testing.T, register func(*grpc.Server), expectedServices 
 	var capture captureStreamNames
 	svr := grpc.NewServer(grpc.StreamInterceptor(capture.intercept), grpc.UnknownServiceHandler(capture.handleUnknown))
 	register(svr)
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		panic(fmt.Sprintf("Failed to open server socket: %s", err.Error()))
-	}
-	go func() {
-		err := svr.Serve(l)
-		require.NoError(t, err)
-	}()
-	defer svr.Stop()
-
-	cconn, err := grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create grpc client: %s", err.Error()))
-	}
-	defer func() {
-		err := cconn.Close()
-		require.NoError(t, err)
-	}()
+	cconn := prototesting.StartServer(t, svr)
 	client := NewClientAuto(context.Background(), cconn)
 	now := time.Now()
 	client.now = func() time.Time {
@@ -837,12 +750,7 @@ func (c *captureStreamNames) handleUnknown(_ any, _ grpc.ServerStream) error {
 }
 
 func testClientAutoOnUnavailable(t *testing.T) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		panic(fmt.Sprintf("Failed to open server socket: %s", err.Error()))
-	}
-	captureConn := &captureListener{Listener: l}
-
+	var captureConn *captureListener
 	var capture captureStreamNames
 	svr := grpc.NewServer(
 		grpc.StreamInterceptor(capture.intercept),
@@ -856,25 +764,14 @@ func testClientAutoOnUnavailable(t *testing.T) {
 	refv1alpha.RegisterServerReflectionServer(svr, impl)
 	testprotosgrpc.RegisterDummyServiceServer(svr, testService{})
 
-	go func() {
-		err := svr.Serve(captureConn)
-		require.NoError(t, err)
-	}()
-	defer svr.Stop()
-
 	var captureErrs captureErrors
-	cconn, err := grpc.NewClient(
-		l.Addr().String(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStreamInterceptor(captureErrs.intercept),
+	cconn := prototesting.StartServer(t, svr,
+		prototesting.WithListenerWrapper(func(listener net.Listener) net.Listener {
+			captureConn = &captureListener{Listener: listener}
+			return captureConn
+		}),
+		prototesting.WithDialOptions(grpc.WithStreamInterceptor(captureErrs.intercept)),
 	)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create grpc client: %s", err.Error()))
-	}
-	defer func() {
-		err := cconn.Close()
-		require.NoError(t, err)
-	}()
 	client := NewClientAuto(context.Background(), cconn)
 	now := time.Now()
 	client.now = func() time.Time {
@@ -969,6 +866,51 @@ func (c *captureErrorStream) RecvMsg(m any) error {
 	return err
 }
 
+// TestClientCleanupClosesStream verifies that the cleanup registered by
+// newClient actually runs: a Client that becomes unreachable without Reset
+// having been called must not leak its stream to the server. This only works
+// if nothing reachable from the cleanup's argument refers back to the Client.
+func TestClientCleanupClosesStream(t *testing.T) {
+	t.Parallel()
+	// NB: not parallel; this test forces GCs, which we'd rather not do while
+	// other tests in this package are allocating.
+	streamEnded := make(chan struct{}, 1)
+	cconn := startFakeReflectionServer(t, fakeReflectionServer{
+		fileFor: func(filename string) *descriptorpb.FileDescriptorProto {
+			if filename != "test.proto" {
+				return nil
+			}
+			return newFileProto(filename)
+		},
+		onStreamEnd: func() {
+			select {
+			case streamEnded <- struct{}{}:
+			default:
+			}
+		},
+	})
+
+	// Use a closure so the Client is unreachable as soon as it returns. Note
+	// that we deliberately never call Reset.
+	func() {
+		refClient := NewClientV1(context.Background(), refv1.NewServerReflectionClient(cconn))
+		_, err := refClient.FileByFilename("test.proto")
+		require.NoError(t, err, "failed to resolve test.proto")
+	}()
+
+	deadline := time.After(30 * time.Second)
+	for {
+		runtime.GC()
+		select {
+		case <-streamEnded:
+			return
+		case <-deadline:
+			t.Fatal("stream to server was not closed after Client became unreachable")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+}
+
 func createFilesWithMissingDeps(t *testing.T) *files {
 	t.Helper()
 	var result files
@@ -1002,16 +944,16 @@ func createFilesWithMissingDeps(t *testing.T) *files {
 				Field: []*descriptorpb.FieldDescriptorProto{
 					{
 						Name:     new("name"),
-						Number:   proto.Int32(1),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:   new(int32(1)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 						JsonName: new("name"),
 					},
 					{
 						Name:     new("tags"),
-						Number:   proto.Int32(2),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_UINT64.Enum(),
+						Number:   new(int32(2)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_REPEATED),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_UINT64),
 						JsonName: new("tags"),
 					},
 				},
@@ -1019,9 +961,9 @@ func createFilesWithMissingDeps(t *testing.T) *files {
 					{
 						Extendee: new(".google.protobuf.MessageOptions"),
 						Name:     new("message_option"),
-						Number:   proto.Int32(10101),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:   new(int32(10101)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 					},
 				},
 			},
@@ -1032,11 +974,11 @@ func createFilesWithMissingDeps(t *testing.T) *files {
 				Value: []*descriptorpb.EnumValueDescriptorProto{
 					{
 						Name:   new("VAL0"),
-						Number: proto.Int32(0),
+						Number: new(int32(0)),
 					},
 					{
 						Name:   new("VAL1"),
-						Number: proto.Int32(1),
+						Number: new(int32(1)),
 					},
 				},
 			},
@@ -1045,9 +987,9 @@ func createFilesWithMissingDeps(t *testing.T) *files {
 			{
 				Extendee: new(".google.protobuf.FileOptions"),
 				Name:     new("file_option"),
-				Number:   proto.Int32(10101),
-				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+				Number:   new(int32(10101)),
+				Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+				Type:     new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 			},
 		},
 	}
@@ -1067,17 +1009,17 @@ func createFilesWithMissingDeps(t *testing.T) *files {
 				Field: []*descriptorpb.FieldDescriptorProto{
 					{
 						Name:     new("msg"),
-						Number:   proto.Int32(1),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+						Number:   new(int32(1)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_MESSAGE),
 						TypeName: new(".test.Message"),
 						JsonName: new("msg"),
 					},
 					{
 						Name:     new("en"),
-						Number:   proto.Int32(2),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
+						Number:   new(int32(2)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_REPEATED),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_ENUM),
 						TypeName: new(".test.Enum"),
 						JsonName: new("en"),
 					},
@@ -1088,9 +1030,9 @@ func createFilesWithMissingDeps(t *testing.T) *files {
 				Field: []*descriptorpb.FieldDescriptorProto{
 					{
 						Name:     new("foos"),
-						Number:   proto.Int32(1),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+						Number:   new(int32(1)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_REPEATED),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_MESSAGE),
 						TypeName: new(".foo.bar.Foo"),
 						JsonName: new("foos"),
 					},

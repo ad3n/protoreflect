@@ -11,6 +11,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/ad3n/protoreflect/v2/internal"
+	"github.com/ad3n/protoreflect/v2/internal/fielddefault"
 )
 
 func (p *Printer) printMessageLiteralCompact(msg protoreflect.Message, res *protoregistry.Types, pkg, scope protoreflect.FullName) string {
@@ -76,7 +79,7 @@ func (p *Printer) printMessageLiteralToBuffer(
 			p.printArrayLiteralToBufferMaybeCompact(buf, fld, val.List(), res, pkg, scope, threshold, indent)
 		case fld.IsMap():
 			p.printMapLiteralToBufferMaybeCompact(buf, fld, val.Map(), res, pkg, scope, threshold, indent)
-		case fld.Kind() == protoreflect.MessageKind || fld.Kind() == protoreflect.GroupKind:
+		case internal.IsMessageKind(fld.Kind()):
 			p.printMessageLiteralToBufferMaybeCompact(buf, val.Message(), res, pkg, scope, threshold, indent)
 		default:
 			p.printValueLiteralToBuffer(buf, fld, val.Interface())
@@ -127,19 +130,19 @@ func (p *Printer) maybePrintAnyMessageToBuffer(
 	if md.FullName() != anyTypeName {
 		return false
 	}
-	typeUrlFld := md.Fields().ByNumber(anyTypeUrlTag)
-	if typeUrlFld == nil || typeUrlFld.Kind() != protoreflect.StringKind || typeUrlFld.Cardinality() == protoreflect.Repeated {
+	typeURLField := md.Fields().ByNumber(anyTypeUrlTag)
+	if typeURLField == nil || typeURLField.Kind() != protoreflect.StringKind || typeURLField.Cardinality() == protoreflect.Repeated {
 		return false
 	}
 	valueFld := md.Fields().ByNumber(anyValueTag)
 	if valueFld == nil || valueFld.Kind() != protoreflect.BytesKind || valueFld.Cardinality() == protoreflect.Repeated {
 		return false
 	}
-	typeUrl := msg.Get(typeUrlFld).String()
-	if typeUrl == "" {
+	typeURL := msg.Get(typeURLField).String()
+	if typeURL == "" {
 		return false
 	}
-	mt, err := res.FindMessageByURL(typeUrl)
+	mt, err := res.FindMessageByURL(typeURL)
 	if err != nil {
 		return false
 	}
@@ -156,7 +159,7 @@ func (p *Printer) maybePrintAnyMessageToBuffer(
 	p.maybeNewline(buf, indent)
 
 	buf.WriteRune('[')
-	buf.WriteString(typeUrl)
+	buf.WriteString(typeURL)
 	buf.WriteString("]: ")
 	p.printMessageLiteralToBufferMaybeCompact(buf, valueMsg, res, pkg, scope, threshold, indent)
 
@@ -184,8 +187,10 @@ func (p *Printer) printValueLiteralToBuffer(buf *bytes.Buffer, fld protoreflect.
 		buf.WriteString(quotedBytes(string(val)))
 	case int32, uint32, int64, uint64:
 		_, _ = fmt.Fprintf(buf, "%d", val)
-	case float32, float64:
-		_, _ = fmt.Fprintf(buf, "%f", val)
+	case float32:
+		buf.WriteString(fielddefault.FormatFloat(float64(val), 32))
+	case float64:
+		buf.WriteString(fielddefault.FormatFloat(val, 64))
 	default:
 		_, _ = fmt.Fprintf(buf, "%v", val)
 	}
@@ -257,7 +262,7 @@ func (p *Printer) printArrayLiteralToBuffer(
 			buf.WriteRune(',')
 		}
 		p.maybeNewline(buf, indent)
-		if fld.Kind() == protoreflect.MessageKind || fld.Kind() == protoreflect.GroupKind {
+		if internal.IsMessageKind(fld.Kind()) {
 			p.printMessageLiteralToBufferMaybeCompact(buf, val.Get(i).Message(), res, pkg, scope, threshold, indent)
 		} else {
 			p.printValueLiteralToBuffer(buf, fld, val.Get(i).Interface())

@@ -24,7 +24,8 @@ type ServiceBuilder struct {
 
 var _ Builder = (*ServiceBuilder)(nil)
 
-// NewService creates a new ServiceBuilder for a service with the given name.
+// NewService creates a new ServiceBuilder for a service with the given name. If
+// the given name is not a valid identifier, this function will panic.
 func NewService(name protoreflect.Name) *ServiceBuilder {
 	return &ServiceBuilder{
 		baseBuilder: baseBuilderWithName(name),
@@ -36,17 +37,22 @@ func NewService(name protoreflect.Name) *ServiceBuilder {
 // descriptor.
 //
 // Note that it is not just the given service that is copied but its entire
-// file. So the caller can get the parent element of the returned builder and
+// file. So the caller can get the parent element of the returned builder, and
 // the result would be a builder that is effectively a copy of the service
 // descriptor's parent file.
 //
 // This means that service builders created from descriptors do not need to be
 // explicitly assigned to a file in order to preserve the original service's
 // package name.
+//
+// To get builders for multiple elements in the same file, without creating
+// multiple copies of the enclosing file (which can lead to conflicts when
+// building later), use FromFile to get a single builder for the file, and
+// then use FileBuilder.FindElement to find each element.
 func FromService(sd protoreflect.ServiceDescriptor) (*ServiceBuilder, error) {
 	if fb, err := FromFile(sd.ParentFile()); err != nil {
 		return nil, err
-	} else if sb, ok := fb.findFullyQualifiedElement(sd.FullName()).(*ServiceBuilder); ok {
+	} else if sb, ok := fb.FindElement(sd.FullName()).(*ServiceBuilder); ok {
 		return sb, nil
 	} else {
 		return nil, fmt.Errorf("could not find service %s after converting file %q to builder", sd.FullName(), sd.ParentFile().Path())
@@ -123,7 +129,7 @@ func (sb *ServiceBuilder) removeChild(b Builder) {
 	if p, ok := b.Parent().(*ServiceBuilder); !ok || p != sb {
 		return
 	}
-	sb.methods = deleteBuilder(b.Name(), sb.methods).([]*MethodBuilder)
+	sb.methods = deleteBuilder(sb.methods, b)
 	delete(sb.symbols, b.Name())
 	b.setParent(nil)
 }
@@ -133,7 +139,11 @@ func (sb *ServiceBuilder) renamedChild(b Builder, oldName protoreflect.Name) err
 		return nil
 	}
 
-	if err := sb.addSymbol(b.(*MethodBuilder)); err != nil {
+	mtb, ok := b.(*MethodBuilder)
+	if !ok {
+		return nil
+	}
+	if err := sb.addSymbol(mtb); err != nil {
 		return err
 	}
 	delete(sb.symbols, oldName)
@@ -172,8 +182,8 @@ func (sb *ServiceBuilder) TryRemoveMethod(name protoreflect.Name) bool {
 	return false
 }
 
-// AddMethod adds the given method to this servuce. If an error prevents the
-// method  from being added, this method panics. This returns the service
+// AddMethod adds the given method to this service. If an error prevents the
+// method from being added, this method panics. This returns the service
 // builder, for method chaining.
 func (sb *ServiceBuilder) AddMethod(mtb *MethodBuilder) *ServiceBuilder {
 	if err := sb.TryAddMethod(mtb); err != nil {
@@ -182,8 +192,8 @@ func (sb *ServiceBuilder) AddMethod(mtb *MethodBuilder) *ServiceBuilder {
 	return sb
 }
 
-// TryAddMethod adds the given field to this service, returning any error that
-// prevents the field from being added (such as a name collision with another
+// TryAddMethod adds the given method to this service, returning any error that
+// prevents the method from being added (such as a name collision with another
 // method already added to the service).
 func (sb *ServiceBuilder) TryAddMethod(mtb *MethodBuilder) error {
 	if err := sb.addSymbol(mtb); err != nil {
@@ -242,6 +252,14 @@ func (sb *ServiceBuilder) BuildDescriptor() (protoreflect.Descriptor, error) {
 	return doBuild(sb, BuilderOptions{})
 }
 
+// Clone implements the Builder interface. See Builder.Clone for details.
+func (sb *ServiceBuilder) Clone() Builder {
+	c := newCloner()
+	clone := c.service(sb)
+	c.updateReferences()
+	return clone
+}
+
 // MethodBuilder is a builder used to construct a protoreflect.MethodDescriptor. A
 // method builder *must* be added to a service before calling its Build()
 // method.
@@ -251,15 +269,16 @@ type MethodBuilder struct {
 	baseBuilder
 
 	Options  *descriptorpb.MethodOptions
-	ReqType  *RpcType
-	RespType *RpcType
+	ReqType  *RPCType
+	RespType *RPCType
 }
 
 var _ Builder = (*MethodBuilder)(nil)
 
 // NewMethod creates a new MethodBuilder for a method with the given name and
-// request and response types.
-func NewMethod(name protoreflect.Name, req, resp *RpcType) *MethodBuilder {
+// request and response types. If the given name is not a valid identifier, this
+// function will panic.
+func NewMethod(name protoreflect.Name, req, resp *RPCType) *MethodBuilder {
 	return &MethodBuilder{
 		baseBuilder: baseBuilderWithName(name),
 		ReqType:     req,
@@ -271,17 +290,22 @@ func NewMethod(name protoreflect.Name, req, resp *RpcType) *MethodBuilder {
 // descriptor.
 //
 // Note that it is not just the given method that is copied but its entire file.
-// So the caller can get the parent element of the returned builder and the
+// So the caller can get the parent element of the returned builder, and the
 // result would be a builder that is effectively a copy of the method
 // descriptor's parent service.
 //
 // This means that method builders created from descriptors do not need to be
 // explicitly assigned to a file in order to preserve the original method's
 // package name.
+//
+// To get builders for multiple elements in the same file, without creating
+// multiple copies of the enclosing file (which can lead to conflicts when
+// building later), use FromFile to get a single builder for the file, and
+// then use FileBuilder.FindElement to find each element.
 func FromMethod(mtd protoreflect.MethodDescriptor) (*MethodBuilder, error) {
 	if fb, err := FromFile(mtd.ParentFile()); err != nil {
 		return nil, err
-	} else if mtb, ok := fb.findFullyQualifiedElement(mtd.FullName()).(*MethodBuilder); ok {
+	} else if mtb, ok := fb.FindElement(mtd.FullName()).(*MethodBuilder); ok {
 		return mtb, nil
 	} else {
 		return nil, fmt.Errorf("could not find method %s after converting file %q to builder", mtd.FullName(), mtd.ParentFile().Path())
@@ -289,8 +313,8 @@ func FromMethod(mtd protoreflect.MethodDescriptor) (*MethodBuilder, error) {
 }
 
 func fromMethod(mtd protoreflect.MethodDescriptor) (*MethodBuilder, error) {
-	req := RpcTypeImportedMessage(mtd.Input(), mtd.IsStreamingClient())
-	resp := RpcTypeImportedMessage(mtd.Output(), mtd.IsStreamingServer())
+	req := RPCTypeImportedMessage(mtd.Input(), mtd.IsStreamingClient())
+	resp := RPCTypeImportedMessage(mtd.Output(), mtd.IsStreamingServer())
 	mtb := NewMethod(mtd.Name(), req, resp)
 	var err error
 	mtb.Options, err = protomessage.As[*descriptorpb.MethodOptions](mtd.Options())
@@ -356,14 +380,14 @@ func (mtb *MethodBuilder) SetOptions(options *descriptorpb.MethodOptions) *Metho
 
 // SetRequestType changes the request type for the method and then returns the
 // method builder, for method chaining.
-func (mtb *MethodBuilder) SetRequestType(t *RpcType) *MethodBuilder {
+func (mtb *MethodBuilder) SetRequestType(t *RPCType) *MethodBuilder {
 	mtb.ReqType = t
 	return mtb
 }
 
 // SetResponseType changes the response type for the method and then returns the
 // method builder, for method chaining.
-func (mtb *MethodBuilder) SetResponseType(t *RpcType) *MethodBuilder {
+func (mtb *MethodBuilder) SetResponseType(t *RPCType) *MethodBuilder {
 	mtb.RespType = t
 	return mtb
 }
@@ -405,4 +429,12 @@ func (mtb *MethodBuilder) Build() (protoreflect.MethodDescriptor, error) {
 // interface.
 func (mtb *MethodBuilder) BuildDescriptor() (protoreflect.Descriptor, error) {
 	return doBuild(mtb, BuilderOptions{})
+}
+
+// Clone implements the Builder interface. See Builder.Clone for details.
+func (mtb *MethodBuilder) Clone() Builder {
+	c := newCloner()
+	clone := c.method(mtb)
+	c.updateReferences()
+	return clone
 }

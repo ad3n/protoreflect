@@ -3,8 +3,7 @@ package protobuilder
 import (
 	"bytes"
 	"fmt"
-
-	"reflect"
+	"slices"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -68,6 +67,17 @@ type Builder interface {
 	// package) can be correctly interpreted. If the builder references other
 	// custom options, use BuilderOptions.Build instead.
 	BuildDescriptor() (protoreflect.Descriptor, error)
+
+	// Clone returns a deep copy of this element. The copy has no parent, even
+	// if this element does, so it is ready to be added to another parent.
+	//
+	// The deep copy only creates copies of this element and all of its
+	// descendants. References to other elements outside theis hierarchy, such
+	// as a field's type referring to some other message, are unchanged.
+	//
+	// Also see the package-level Clone function, for a strongly-typed form of
+	// this method.
+	Clone() Builder
 
 	// findChild returns the child builder with the given name or nil if this
 	// builder has no such child.
@@ -393,19 +403,11 @@ func getRoot(b Builder) Builder {
 	}
 }
 
-// deleteBuilder will delete a descriptor builder with the given name from the
-// given slice. The slice's elements can be any builder type. The parameter has
-// type interface{} so it can accept []*MessageBuilder or []*FieldBuilder, for
-// example. It returns a value of the same type with the named builder omitted.
-func deleteBuilder(name protoreflect.Name, descs any) any {
-	rv := reflect.ValueOf(descs)
-	for i := 0; i < rv.Len(); i++ {
-		c := rv.Index(i).Interface().(Builder)
-		if c.Name() == name {
-			head := rv.Slice(0, i)
-			tail := rv.Slice(i+1, rv.Len())
-			return reflect.AppendSlice(head, tail).Interface()
-		}
-	}
-	return descs
+// deleteBuilder removes the given builder (compared by identity, not by name)
+// from the given slice and returns the resulting slice. It modifies the slice
+// in place, so callers should only use the returned value.
+func deleteBuilder[T Builder](builders []T, b Builder) []T {
+	return slices.DeleteFunc(builders, func(elem T) bool {
+		return Builder(elem) == b
+	})
 }

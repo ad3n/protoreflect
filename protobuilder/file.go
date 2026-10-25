@@ -167,8 +167,8 @@ func FromFile(fd protoreflect.FileDescriptor) (*FileBuilder, error) {
 	}
 	for _, sb := range fb.services {
 		for _, mtb := range sb.methods {
-			updateLocalRefsInRpcType(mtb.ReqType, localMessages)
-			updateLocalRefsInRpcType(mtb.RespType, localMessages)
+			updateLocalRefsInRPCType(mtb.ReqType, localMessages)
+			updateLocalRefsInRPCType(mtb.RespType, localMessages)
 		}
 	}
 
@@ -177,11 +177,11 @@ func FromFile(fd protoreflect.FileDescriptor) (*FileBuilder, error) {
 
 func updateLocalRefsInMessage(mb *MessageBuilder, localMessages map[protoreflect.MessageDescriptor]*MessageBuilder, localEnums map[protoreflect.EnumDescriptor]*EnumBuilder) {
 	for _, b := range mb.fieldsAndOneofs {
-		if flb, ok := b.(*FieldBuilder); ok {
-			updateLocalRefsInField(flb, localMessages, localEnums)
-		} else {
-			oob := b.(*OneofBuilder)
-			for _, flb := range oob.choices {
+		switch b := b.(type) {
+		case *FieldBuilder:
+			updateLocalRefsInField(b, localMessages, localEnums)
+		case *OneofBuilder:
+			for _, flb := range b.choices {
 				updateLocalRefsInField(flb, localMessages, localEnums)
 			}
 		}
@@ -218,7 +218,7 @@ func updateLocalRefsInField(flb *FieldBuilder, localMessages map[protoreflect.Me
 	}
 }
 
-func updateLocalRefsInRpcType(rpcType *RpcType, localMessages map[protoreflect.MessageDescriptor]*MessageBuilder) {
+func updateLocalRefsInRPCType(rpcType *RPCType, localMessages map[protoreflect.MessageDescriptor]*MessageBuilder) {
 	if rpcType.foreignType != nil {
 		if mb, ok := localMessages[rpcType.foreignType]; ok {
 			rpcType.foreignType = nil
@@ -230,7 +230,6 @@ func updateLocalRefsInRpcType(rpcType *RpcType, localMessages map[protoreflect.M
 // Name implements the Builder interface. However, files do not have
 // names, they have paths. So this method always returns the empty
 // string. Use Path instead.
-// instead.
 func (fb *FileBuilder) Name() protoreflect.Name {
 	return ""
 }
@@ -356,13 +355,13 @@ func (fb *FileBuilder) removeChild(b Builder) {
 
 	switch b.(type) {
 	case *MessageBuilder:
-		fb.messages = deleteBuilder(b.Name(), fb.messages).([]*MessageBuilder)
+		fb.messages = deleteBuilder(fb.messages, b)
 	case *FieldBuilder:
-		fb.extensions = deleteBuilder(b.Name(), fb.extensions).([]*FieldBuilder)
+		fb.extensions = deleteBuilder(fb.extensions, b)
 	case *EnumBuilder:
-		fb.enums = deleteBuilder(b.Name(), fb.enums).([]*EnumBuilder)
+		fb.enums = deleteBuilder(fb.enums, b)
 	case *ServiceBuilder:
-		fb.services = deleteBuilder(b.Name(), fb.services).([]*ServiceBuilder)
+		fb.services = deleteBuilder(fb.services, b)
 	}
 	delete(fb.symbols, b.Name())
 	b.setParent(nil)
@@ -388,7 +387,22 @@ func (fb *FileBuilder) addSymbol(b Builder) error {
 	return nil
 }
 
-func (fb *FileBuilder) findFullyQualifiedElement(fqn protoreflect.FullName) Builder {
+// FindElement returns the element in this file with the given fully-qualified
+// name, or nil if there is no such element. Unlike the Get* methods, which only
+// return immediate children, this searches all descendants. So it can be used
+// to find nested messages, fields, enum values, etc.
+//
+// The given name must include the file's package. As with descriptors, the
+// full name of an enum value is in the scope of its enum's parent, not of the
+// enum itself. Similarly, a field in a oneof is found by its name in the
+// enclosing message; the name of the oneof isn't part of the field's name.
+//
+// This is useful for getting builders for several elements in one file. The
+// From* functions other than FromFile, such as FromMessage, copy the element's
+// entire file. So calling them for two elements in the same file produces two
+// separate copies of that file. Instead, use FromFile to get a single builder
+// for the file, and then use this method to get builders for elements therein.
+func (fb *FileBuilder) FindElement(fqn protoreflect.FullName) Builder {
 	if fb.Package != "" {
 		if !strings.HasPrefix(string(fqn), string(fb.Package+".")) {
 			return nil
@@ -642,7 +656,7 @@ func (fb *FileBuilder) addExtensionsFromImport(dep protoreflect.FileDescriptor) 
 // for the file that contains the custom options.
 //
 // Knowledge of custom options can also be provided by using BuilderOptions with
-// an ExtensionRegistry, when building the file.
+// a Resolver, when building the file.
 func (fb *FileBuilder) AddDependency(dep *FileBuilder) *FileBuilder {
 	if fb.explicitDeps == nil {
 		fb.explicitDeps = map[*FileBuilder]struct{}{}
@@ -659,7 +673,7 @@ func (fb *FileBuilder) AddDependency(dep *FileBuilder) *FileBuilder {
 // for the file that contains the custom options.
 //
 // Knowledge of custom options can also be provided by using BuilderOptions with
-// an ExtensionRegistry, when building the file.
+// a Resolver, when building the file.
 func (fb *FileBuilder) AddImportedDependency(dep protoreflect.FileDescriptor) *FileBuilder {
 	if fb.explicitImports == nil {
 		fb.explicitImports = map[protoreflect.FileDescriptor]struct{}{}
@@ -671,7 +685,7 @@ func (fb *FileBuilder) AddImportedDependency(dep protoreflect.FileDescriptor) *F
 // PruneUnusedDependencies removes all imports that are not actually used in the
 // file. Note that this undoes any calls to AddDependency or AddImportedDependency
 // which means that custom options may be missing from the resulting built
-// descriptor unless BuilderOptions are used that include an ExtensionRegistry with
+// descriptor unless BuilderOptions are used that include a Resolver with
 // knowledge of all custom options.
 //
 // When FromFile is used to create a FileBuilder from an existing descriptor, all
@@ -681,8 +695,8 @@ func (fb *FileBuilder) AddImportedDependency(dep protoreflect.FileDescriptor) *F
 // is used, any custom options present in the original descriptor will be correctly
 // retained. If the file is mutated such that new custom options are added to the file,
 // they may be missing unless AddImportedDependency is called after pruning OR
-// BuilderOptions are used that include an ExtensionRegistry with knowledge of the
-// new custom options.
+// BuilderOptions are used that include a Resolver with knowledge of the new
+// custom options.
 func (fb *FileBuilder) PruneUnusedDependencies() *FileBuilder {
 	fb.explicitImports = nil
 	fb.explicitDeps = nil
@@ -754,7 +768,7 @@ func (fb *FileBuilder) buildProto(deps []protoreflect.FileDescriptor) (*descript
 			return nil, fmt.Errorf("builder indicates syntax editions but edition %v; set syntax instead", fb.Edition)
 		default:
 			syntax = new("editions")
-			edition = fb.Edition.Enum()
+			edition = new(fb.Edition)
 		}
 	default:
 		return nil, fmt.Errorf("builder contains unknown syntax: %v", fb.Syntax)
@@ -857,4 +871,12 @@ func (fb *FileBuilder) Build() (protoreflect.FileDescriptor, error) {
 // interface.
 func (fb *FileBuilder) BuildDescriptor() (protoreflect.Descriptor, error) {
 	return doBuild(fb, BuilderOptions{})
+}
+
+// Clone implements the Builder interface. See Builder.Clone for details.
+func (fb *FileBuilder) Clone() Builder {
+	c := newCloner()
+	clone := c.file(fb)
+	c.updateReferences()
+	return clone
 }

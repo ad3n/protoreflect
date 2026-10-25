@@ -1,25 +1,14 @@
 # Protocol Buffer and gRPC Reflection
-[![Build Status](https://circleci.com/gh/jhump/protoreflect/tree/v2.svg?style=svg)](https://circleci.com/gh/jhump/protoreflect/tree/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ad3n/protoreflect)](https://goreportcard.com/report/github.com/ad3n/protoreflect)
-
-This repo builds on top of the reflection capabilities in the [Protobuf runtime for Go](https://pkg.go.dev/google.golang.org/protobuf/reflect/protoreflect)
-and also provides reflection APIs for [gRPC](https://grpc.io/) as well.
-
+[![CI](https://github.com/jhump/protoreflect/actions/workflows/ci.yaml/badge.svg)](https://github.com/jhump/protoreflect/actions/workflows/ci.yaml)
 [![GoDoc](https://pkg.go.dev/badge/github.com/ad3n/protoreflect/v2.svg)](https://pkg.go.dev/github.com/ad3n/protoreflect/v2)
 
-> [!NOTE]
-> Version 2.0.0 is still a work in progress. It is basically feature complete, but still needs more tests
-> for the new functionality.
->
-> You can try it out by getting a pre-release version:
-> ```
-> go get github.com/ad3n/protoreflect/v2@v2.0.0-beta.2
-> ```
->
-> Note that the APIs may change a little bit between now and a final v2.0.0 release. Also note
-> that some packages in v2 still need more tests, so you may find some bugs. But that should mostly
-> be for new functionality. If you're just trying to update your code from v1 of this repo, those
-> packages should be rock-solid and least likely to see any further API changes.
+This repo builds on top of the reflection capabilities in the [Protobuf runtime for Go](https://pkg.go.dev/google.golang.org/protobuf/reflect/protoreflect).
+It also provides reflection APIs for [gRPC](https://grpc.io/) and includes a number of helpers for working
+with descriptors and for handling messages generically.
+
+_For users coming from v1 of this repo, take a look at the release notes for the
+[v2 beta](https://github.com/jhump/protoreflect/releases/tag/v2.0.0-beta.2) to get a sense of
+what has changed since v1._
 
 ----
 ## Descriptors and Reflection Utilities

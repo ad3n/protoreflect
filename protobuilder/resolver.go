@@ -1,11 +1,11 @@
 package protobuilder
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
-
-	"reflect"
 
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
@@ -48,6 +48,10 @@ type dependencyResolver struct {
 	resolvedRoots map[Builder]protoreflect.FileDescriptor
 	seen          map[Builder]struct{}
 	opts          BuilderOptions
+	// builtFiles has the descriptor proto for each file built from a
+	// FileBuilder, keyed by path. These are copies, taken before the file
+	// was registered, since registering may modify the proto.
+	builtFiles map[string]*descriptorpb.FileDescriptorProto
 }
 
 func newResolver(opts BuilderOptions) *dependencyResolver {
@@ -55,6 +59,7 @@ func newResolver(opts BuilderOptions) *dependencyResolver {
 		resolvedRoots: map[Builder]protoreflect.FileDescriptor{},
 		seen:          map[Builder]struct{}{},
 		opts:          opts,
+		builtFiles:    map[string]*descriptorpb.FileDescriptorProto{},
 	}
 }
 
@@ -170,7 +175,44 @@ func (r *dependencyResolver) resolveFile(fb *FileBuilder, root Builder, seen []B
 			return nil, err
 		}
 	}
+
+	// Several file builders may have the same path. For example, calling
+	// FromMessage for two messages in the same file creates a separate copy of
+	// that file for each. That's fine if the copies are identical. Similarly,
+	// another file may have already imported the original descriptor.
+	if prev, ok := r.builtFiles[fp.GetName()]; ok {
+		if !proto.Equal(prev, fp) {
+			return nil, multipleVersionsError(fp.GetName())
+		}
+		return r.registry.FindFileByPath(fp.GetName())
+	}
+	if existing, err := r.registry.FindFileByPath(fp.GetName()); err == nil {
+		existingProto, err := r.registry.ProtoFromFileDescriptor(existing)
+		if err != nil {
+			return nil, err
+		}
+		if !equalIgnoringSourceInfo(existingProto, fp) {
+			return nil, multipleVersionsError(fp.GetName())
+		}
+		return existing, nil
+	}
+	r.builtFiles[fp.GetName()] = proto.CloneOf(fp)
 	return r.registry.RegisterFileProto(fp)
+}
+
+// equalIgnoringSourceInfo reports whether the given file protos are equal,
+// other than their source code info.
+func equalIgnoringSourceInfo(a, b *descriptorpb.FileDescriptorProto) bool {
+	// temporarily reset source code info: builders do not have them
+	defer setSourceCodeInfo(a, nil)()
+	defer setSourceCodeInfo(b, nil)()
+	return proto.Equal(a, b)
+}
+
+func multipleVersionsError(path string) error {
+	return fmt.Errorf("multiple versions of descriptors found with same file path: %s "+
+		"(to modify several elements of one file, use FromFile and FileBuilder.FindElement "+
+		"instead of a separate From* call for each element)", path)
 }
 
 type filesByPath map[string]protoreflect.FileDescriptor
@@ -200,13 +242,8 @@ func isDuplicateDependency(dep protoreflect.FileDescriptor, files protoresolve.F
 	if depFDP == nil {
 		depFDP = protodesc.ToFileDescriptorProto(dep)
 	}
-
-	// temporarily reset source code info: builders do not have them
-	defer setSourceCodeInfo(prevFDP, nil)()
-	defer setSourceCodeInfo(depFDP, nil)()
-
-	if !proto.Equal(prevFDP, depFDP) {
-		return true, fmt.Errorf("multiple versions of descriptors found with same file path: %s", dep.Path())
+	if !equalIgnoringSourceInfo(prevFDP, depFDP) {
+		return true, multipleVersionsError(dep.Path())
 	}
 	return true, nil
 }
@@ -245,24 +282,22 @@ func (r *dependencyResolver) resolveSyntheticFile(b Builder, seen []Builder) (pr
 	case *ServiceBuilder:
 		f.services = append(f.services, curr)
 	case *FieldBuilder:
-		if curr.IsExtension() {
-			f.extensions = append(f.extensions, curr)
-		} else {
-			panic("field must be added to message before calling Build()")
+		if !curr.IsExtension() {
+			return nil, errors.New("field must be added to message before calling Build()")
 		}
+		f.extensions = append(f.extensions, curr)
 	case *OneofBuilder:
 		if _, ok := b.(*OneofBuilder); ok {
-			panic("one-of must be added to message before calling Build()")
-		} else {
-			// b was a child of one-of which means it must have been a field
-			panic("field must be added to message before calling Build()")
+			return nil, errors.New("one-of must be added to message before calling Build()")
 		}
+		// b was a child of one-of which means it must have been a field
+		return nil, errors.New("field must be added to message before calling Build()")
 	case *MethodBuilder:
-		panic("method must be added to service before calling Build()")
+		return nil, errors.New("method must be added to service before calling Build()")
 	case *EnumValueBuilder:
-		panic("enum value must be added to enum before calling Build()")
+		return nil, errors.New("enum value must be added to enum before calling Build()")
 	default:
-		panic(fmt.Sprintf("Unrecognized kind of builder: %T", b))
+		return nil, fmt.Errorf("unrecognized kind of builder: %T", b)
 	}
 	curr.setParent(f)
 
@@ -271,18 +306,19 @@ func (r *dependencyResolver) resolveSyntheticFile(b Builder, seen []Builder) (pr
 		curr.setParent(nil)
 	}()
 
-	return r.resolveFile(f, b, seen)
+	// The synthetic file is now the root of b's hierarchy.
+	return r.resolveFile(f, f, seen)
 }
 
 func (r *dependencyResolver) resolveTypesInMessage(root Builder, seen []Builder, deps *dependencies, mb *MessageBuilder) error {
 	for _, b := range mb.fieldsAndOneofs {
-		if flb, ok := b.(*FieldBuilder); ok {
-			if err := r.resolveTypesInField(root, seen, deps, flb); err != nil {
+		switch b := b.(type) {
+		case *FieldBuilder:
+			if err := r.resolveTypesInField(root, seen, deps, b); err != nil {
 				return err
 			}
-		} else {
-			oob := b.(*OneofBuilder)
-			for _, flb := range oob.choices {
+		case *OneofBuilder:
+			for _, flb := range b.choices {
 				if err := r.resolveTypesInField(root, seen, deps, flb); err != nil {
 					return err
 				}
@@ -316,17 +352,20 @@ func (r *dependencyResolver) resolveTypesInExtension(root Builder, seen []Builde
 
 func (r *dependencyResolver) resolveTypesInService(root Builder, seen []Builder, deps *dependencies, sb *ServiceBuilder) error {
 	for _, mtb := range sb.methods {
-		if err := r.resolveRpcType(root, seen, mtb.ReqType, deps); err != nil {
+		if mtb.ReqType == nil || mtb.RespType == nil {
+			return fmt.Errorf("method %s must have both request and response types", FullName(mtb))
+		}
+		if err := r.resolveRPCType(root, seen, mtb.ReqType, deps); err != nil {
 			return err
 		}
-		if err := r.resolveRpcType(root, seen, mtb.RespType, deps); err != nil {
+		if err := r.resolveRPCType(root, seen, mtb.RespType, deps); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *dependencyResolver) resolveRpcType(root Builder, seen []Builder, t *RpcType, deps *dependencies) error {
+func (r *dependencyResolver) resolveRPCType(root Builder, seen []Builder, t *RPCType, deps *dependencies) error {
 	if t.foreignType != nil {
 		deps.add(t.foreignType.ParentFile())
 	} else {
@@ -397,18 +436,18 @@ func (r *dependencyResolver) resolveTypesInFileOptions(root Builder, deps *depen
 
 func (r *dependencyResolver) resolveTypesInMessageOptions(root Builder, fileExts protoresolve.ExtensionTypeResolver, deps *dependencies, mb *MessageBuilder) error {
 	for _, b := range mb.fieldsAndOneofs {
-		if flb, ok := b.(*FieldBuilder); ok {
-			if err := r.resolveTypesInOptions(root, fileExts, deps, flb.Options); err != nil {
+		switch b := b.(type) {
+		case *FieldBuilder:
+			if err := r.resolveTypesInOptions(root, fileExts, deps, b.Options); err != nil {
 				return err
 			}
-		} else {
-			oob := b.(*OneofBuilder)
-			for _, flb := range oob.choices {
+		case *OneofBuilder:
+			for _, flb := range b.choices {
 				if err := r.resolveTypesInOptions(root, fileExts, deps, flb.Options); err != nil {
 					return err
 				}
 			}
-			if err := r.resolveTypesInOptions(root, fileExts, deps, oob.Options); err != nil {
+			if err := r.resolveTypesInOptions(root, fileExts, deps, b.Options); err != nil {
 				return err
 			}
 		}
@@ -423,7 +462,7 @@ func (r *dependencyResolver) resolveTypesInMessageOptions(root Builder, fileExts
 			return err
 		}
 	}
-	for _, nmb := range mb.nestedMessages {
+	for _, nmb := range slices.Concat(mb.nestedMessages, mb.fieldMessageTypes()) {
 		if err := r.resolveTypesInMessageOptions(root, fileExts, deps, nmb); err != nil {
 			return err
 		}
@@ -575,7 +614,7 @@ func findExtensionInMessage(mb *MessageBuilder, messageName protoreflect.FullNam
 			return true
 		}
 	}
-	for _, mb := range mb.nestedMessages {
+	for _, mb := range slices.Concat(mb.nestedMessages, mb.fieldMessageTypes()) {
 		if findExtensionInMessage(mb, messageName, extTag) {
 			return true
 		}

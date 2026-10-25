@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"testing"
-
 	"reflect"
+	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -633,7 +632,7 @@ func TestDescriptorConverter_ToServiceDescriptor(t *testing.T) {
 	rr := &Registry{TypeFetcher: tf}
 	dc := rr.AsDescriptorConverter()
 
-	sd, err := dc.ToServiceDescriptor(context.Background(), getApi(t))
+	sd, err := dc.ToServiceDescriptor(context.Background(), getAPI(t))
 	require.NoError(t, err)
 
 	require.Equal(t, "Service", string(sd.Name()))
@@ -644,7 +643,7 @@ func TestDescriptorConverter_ToServiceDescriptor(t *testing.T) {
 	so := &descriptorpb.ServiceOptions{
 		Deprecated: new(true),
 	}
-	proto.SetExtension(so, testprotos.E_Sfubar, &testprotos.ReallySimpleMessage{Id: proto.Uint64(100), Name: new("deuce")})
+	proto.SetExtension(so, testprotos.E_Sfubar, &testprotos.ReallySimpleMessage{Id: new(uint64(100)), Name: new("deuce")})
 	proto.SetExtension(so, testprotos.E_Sfubare, testprotos.ReallySimpleEnum_VALUE)
 	protosEqual(t, so, sd.Options())
 
@@ -707,7 +706,7 @@ func TestDescriptorConverter_ToServiceDescriptor(t *testing.T) {
 	require.Equal(t, protoreflect.Proto3, md4.ParentFile().Syntax())
 }
 
-func getApi(t *testing.T) *apipb.Api {
+func getAPI(t *testing.T) *apipb.Api {
 	var bol anypb.Any
 	err := anypb.MarshalFrom(&bol, &wrapperspb.BoolValue{Value: true}, proto.MarshalOptions{})
 	require.NoError(t, err)
@@ -724,7 +723,7 @@ func getApi(t *testing.T) *apipb.Api {
 	err = anypb.MarshalFrom(&enu, &wrapperspb.Int32Value{Value: int32(testprotos.ReallySimpleEnum_VALUE)}, proto.MarshalOptions{})
 	require.NoError(t, err)
 	var msg anypb.Any
-	err = anypb.MarshalFrom(&msg, &testprotos.ReallySimpleMessage{Id: proto.Uint64(100), Name: new("deuce")}, proto.MarshalOptions{})
+	err = anypb.MarshalFrom(&msg, &testprotos.ReallySimpleMessage{Id: new(uint64(100)), Name: new("deuce")}, proto.MarshalOptions{})
 	require.NoError(t, err)
 	return &apipb.Api{
 		Name: "some.Service",
@@ -795,11 +794,11 @@ func getApi(t *testing.T) *apipb.Api {
 	}
 }
 
-func TestDescriptorConverter_DescriptorAsApi(t *testing.T) {
+func TestDescriptorConverter_DescriptorAsAPI(t *testing.T) {
 	svcOpts := &descriptorpb.ServiceOptions{
 		Deprecated: new(true),
 	}
-	proto.SetExtension(svcOpts, testprotos.E_Sfubar, &testprotos.ReallySimpleMessage{Id: proto.Uint64(1234), Name: new("abc")})
+	proto.SetExtension(svcOpts, testprotos.E_Sfubar, &testprotos.ReallySimpleMessage{Id: new(uint64(1234)), Name: new("abc")})
 	proto.SetExtension(svcOpts, testprotos.E_Sfubare, testprotos.ReallySimpleEnum_VALUE)
 	mtdOpts := &descriptorpb.MethodOptions{
 		Deprecated: new(true),
@@ -835,9 +834,9 @@ func TestDescriptorConverter_DescriptorAsApi(t *testing.T) {
 				Field: []*descriptorpb.FieldDescriptorProto{
 					{
 						Name:     new("id"),
-						Number:   proto.Int32(1),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:   new(int32(1)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 						JsonName: new("id"),
 					},
 				},
@@ -848,7 +847,7 @@ func TestDescriptorConverter_DescriptorAsApi(t *testing.T) {
 	require.NoError(t, err)
 
 	rr := &Registry{DefaultBaseURL: "foo.com"}
-	api := rr.AsDescriptorConverter().DescriptorAsApi(fd.Services().Get(0))
+	api := rr.AsDescriptorConverter().DescriptorAsAPI(fd.Services().Get(0))
 
 	expected := &apipb.Api{
 		Name:   "foo.FooService",
@@ -858,7 +857,7 @@ func TestDescriptorConverter_DescriptorAsApi(t *testing.T) {
 		},
 		Options: []*typepb.Option{
 			{Name: "deprecated", Value: asAny(t, &wrapperspb.BoolValue{Value: true})},
-			{Name: "testprotos.sfubar", Value: asAny(t, &testprotos.ReallySimpleMessage{Id: proto.Uint64(1234), Name: new("abc")})},
+			{Name: "testprotos.sfubar", Value: asAny(t, &testprotos.ReallySimpleMessage{Id: new(uint64(1234)), Name: new("abc")})},
 			{Name: "testprotos.sfubare", Value: asAny(t, &wrapperspb.Int32Value{Value: int32(testprotos.ReallySimpleEnum_VALUE)})},
 		},
 		Methods: []*apipb.Method{
@@ -916,35 +915,35 @@ func TestDescriptorConverter_ToMessageDescriptor(t *testing.T) {
 		Field: []*descriptorpb.FieldDescriptorProto{
 			{
 				Name:     new("a"),
-				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+				Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+				Type:     new(descriptorpb.FieldDescriptorProto_TYPE_MESSAGE),
 				TypeName: new(".some.OtherType"),
-				Number:   proto.Int32(1),
+				Number:   new(int32(1)),
 				Options:  fldOpts,
 				JsonName: new("a"),
 			},
 			{
 				Name:     new("b"),
-				Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
-				Number:   proto.Int32(2),
+				Label:    new(descriptorpb.FieldDescriptorProto_LABEL_REPEATED),
+				Type:     new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
+				Number:   new(int32(2)),
 				JsonName: new("b"),
 			},
 			{
 				Name:       new("c"),
-				Label:      descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-				Type:       descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
+				Label:      new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+				Type:       new(descriptorpb.FieldDescriptorProto_TYPE_ENUM),
 				TypeName:   new(".some.Enum"),
-				Number:     proto.Int32(3),
-				OneofIndex: proto.Int32(0),
+				Number:     new(int32(3)),
+				OneofIndex: new(int32(0)),
 				JsonName:   new("c"),
 			},
 			{
 				Name:       new("d"),
-				Label:      descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-				Type:       descriptorpb.FieldDescriptorProto_TYPE_INT32.Enum(),
-				Number:     proto.Int32(4),
-				OneofIndex: proto.Int32(0),
+				Label:      new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+				Type:       new(descriptorpb.FieldDescriptorProto_TYPE_INT32),
+				Number:     new(int32(4)),
+				OneofIndex: new(int32(0)),
 				JsonName:   new("d"),
 			},
 		},
@@ -969,43 +968,43 @@ func TestDescriptorConverter_DescriptorAsType(t *testing.T) {
 				Field: []*descriptorpb.FieldDescriptorProto{
 					{
 						Name:     new("abc"),
-						Number:   proto.Int32(1),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:   new(int32(1)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 						Options:  &descriptorpb.FieldOptions{Deprecated: new(true)},
 						JsonName: new("abc"),
 					},
 					{
 						Name:     new("def"),
-						Number:   proto.Int32(2),
-						Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
-						Type:     descriptorpb.FieldDescriptorProto_TYPE_INT32.Enum(),
+						Number:   new(int32(2)),
+						Label:    new(descriptorpb.FieldDescriptorProto_LABEL_REPEATED),
+						Type:     new(descriptorpb.FieldDescriptorProto_TYPE_INT32),
 						Options:  &descriptorpb.FieldOptions{Packed: new(true)},
 						JsonName: new("def"),
 					},
 					{
 						Name:         new("ghi"),
-						Number:       proto.Int32(3),
-						Label:        descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:         descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:       new(int32(3)),
+						Label:        new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:         new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 						DefaultValue: new("foobar"),
 						JsonName:     new("ghi"),
 					},
 					{
 						Name:       new("nid"),
-						Number:     proto.Int32(4),
-						Label:      descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:       descriptorpb.FieldDescriptorProto_TYPE_UINT64.Enum(),
+						Number:     new(int32(4)),
+						Label:      new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:       new(descriptorpb.FieldDescriptorProto_TYPE_UINT64),
 						JsonName:   new("nid"),
-						OneofIndex: proto.Int32(0),
+						OneofIndex: new(int32(0)),
 					},
 					{
 						Name:       new("sid"),
-						Number:     proto.Int32(5),
-						Label:      descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
-						Type:       descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:     new(int32(5)),
+						Label:      new(descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL),
+						Type:       new(descriptorpb.FieldDescriptorProto_TYPE_STRING),
 						JsonName:   new("_SID_"),
-						OneofIndex: proto.Int32(0),
+						OneofIndex: new(int32(0)),
 					},
 				},
 			},
@@ -1108,16 +1107,16 @@ func TestDescriptorConverter_ToEnumDescriptor(t *testing.T) {
 		Value: []*descriptorpb.EnumValueDescriptorProto{
 			{
 				Name:    new("ABC"),
-				Number:  proto.Int32(0),
+				Number:  new(int32(0)),
 				Options: enumValOpts,
 			},
 			{
 				Name:   new("XYZ"),
-				Number: proto.Int32(1),
+				Number: new(int32(1)),
 			},
 			{
 				Name:   new("WXY"),
-				Number: proto.Int32(1),
+				Number: new(int32(1)),
 			},
 		},
 	}
@@ -1137,24 +1136,24 @@ func TestDescriptorConverter_DescriptorAsEnum(t *testing.T) {
 				Value: []*descriptorpb.EnumValueDescriptorProto{
 					{
 						Name:   new("ZERO"),
-						Number: proto.Int32(0),
+						Number: new(int32(0)),
 					},
 					{
 						Name:    new("__UNSET__"),
-						Number:  proto.Int32(0),
+						Number:  new(int32(0)),
 						Options: &descriptorpb.EnumValueOptions{Deprecated: new(true)},
 					},
 					{
 						Name:   new("ONE"),
-						Number: proto.Int32(1),
+						Number: new(int32(1)),
 					},
 					{
 						Name:   new("TWO"),
-						Number: proto.Int32(2),
+						Number: new(int32(2)),
 					},
 					{
 						Name:   new("THREE"),
-						Number: proto.Int32(3),
+						Number: new(int32(3)),
 					},
 				},
 			},
