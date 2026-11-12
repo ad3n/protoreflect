@@ -86,3 +86,35 @@ func BenchmarkDefaultValueParallel(b *testing.B) {
 		})
 	}
 }
+
+func TestDefaultBytesOutputSurvivesReuse(t *testing.T) {
+	for _, size := range []int{64, 1023, 1024, 1025, 4096, 65537, 1 << 20} {
+		for _, pattern := range []struct {
+			name string
+			data []byte
+		}{
+			{"binary", []byte{255}},
+			{"printable", []byte("a")},
+			{"mixed", []byte{0, 255, '\\', 'a'}},
+		} {
+			t.Run(fmt.Sprintf("%s_%d", pattern.name, size), func(t *testing.T) {
+				input := bytes.Repeat(pattern.data, (size+len(pattern.data)-1)/len(pattern.data))[:size]
+				want := string(legacyAppendDefaultBytes(nil, input))
+				got := encodeDefaultBytesLarge(input)
+				if got != want {
+					t.Fatal("output mismatch")
+				}
+
+				for i := range input {
+					input[i] ^= 255
+				}
+
+				_ = encodeDefaultBytesLarge(input)
+				runtime.GC()
+				if got != want {
+					t.Fatal("output changed after input mutation, another encoding, and GC")
+				}
+			})
+		}
+	}
+}

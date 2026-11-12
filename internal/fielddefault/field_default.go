@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -82,9 +83,27 @@ func encodeDefaultBytesLarge(data []byte) string {
 		return string(data)
 	}
 
+	if length >= 4096 {
+		return buildDefaultBytes(data, length)
+	}
+
 	buf := make([]byte, 0, length)
 	buf = appendDefaultBytes(buf, data)
 	return string(buf)
+}
+
+func buildDefaultBytes(data []byte, length int) string {
+	var result strings.Builder
+	result.Grow(length)
+	var scratch [4096]byte
+	for len(data) > 0 {
+		n := min(len(data), len(scratch)/4)
+		encoded := appendDefaultBytes(scratch[:0], data[:n])
+		_, _ = result.Write(encoded)
+		data = data[n:]
+	}
+
+	return result.String()
 }
 
 func appendDefaultBytes(dst, data []byte) []byte {
