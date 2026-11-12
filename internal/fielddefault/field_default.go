@@ -23,7 +23,16 @@ func DefaultValue(fld protoreflect.FieldDescriptor) string {
 	case protoreflect.StringKind:
 		return defVal.String()
 	case protoreflect.BytesKind:
-		return encodeDefaultBytes(defVal.Bytes())
+		data := defVal.Bytes()
+		if useNEON && len(data) == 0 {
+			return ""
+		}
+
+		if useNEON && len(data) >= 64 {
+			return encodeDefaultBytesLarge(data)
+		}
+
+		return encodeDefaultBytes(data)
 	case protoreflect.EnumKind:
 		return string(fld.DefaultEnumValue().Name())
 	case protoreflect.FloatKind:
@@ -57,7 +66,18 @@ func FormatFloat(flt float64, bitSize int) string {
 }
 
 func encodeDefaultBytes(data []byte) string {
-	length := escapedBytesLen(data)
+	length := escapedBytesLenShort(data)
+	if length == len(data) {
+		return string(data)
+	}
+
+	buf := make([]byte, 0, length)
+	buf = appendDefaultBytes(buf, data)
+	return string(buf)
+}
+
+func encodeDefaultBytesLarge(data []byte) string {
+	length := escapedBytesLenLarge(data)
 	if length == len(data) {
 		return string(data)
 	}
