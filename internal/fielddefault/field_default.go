@@ -1,6 +1,7 @@
 package fielddefault
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
@@ -8,6 +9,22 @@ import (
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+type escapedByte struct {
+	value uint32
+	width uint8
+}
+
+var escapedByteTable = func() [256]escapedByte {
+	var table [256]escapedByte
+	for i := range table {
+		var buf [4]byte
+		encoded := appendDefaultBytes(buf[:0], []byte{byte(i)})
+		table[i] = escapedByte{value: binary.LittleEndian.Uint32(buf[:]), width: uint8(len(encoded))}
+	}
+
+	return table
+}()
 
 func DefaultValue(fld protoreflect.FieldDescriptor) string {
 	if !fld.HasDefault() || !fld.HasPresence() ||
@@ -95,15 +112,34 @@ func encodeDefaultBytesLarge(data []byte) string {
 func buildDefaultBytes(data []byte, length int) string {
 	var result strings.Builder
 	result.Grow(length)
+	dense := length/2 >= len(data)
 	var scratch [4096]byte
 	for len(data) > 0 {
 		n := min(len(data), len(scratch)/4)
-		encoded := appendDefaultBytes(scratch[:0], data[:n])
+		var encoded []byte
+		switch {
+		case dense:
+			encoded = writeEscapedBytes(scratch[:], data[:n])
+		default:
+			encoded = appendDefaultBytes(scratch[:0], data[:n])
+		}
+
 		_, _ = result.Write(encoded)
 		data = data[n:]
 	}
 
 	return result.String()
+}
+
+func writeEscapedBytes(dst, data []byte) []byte {
+	pos := 0
+	for _, c := range data {
+		entry := escapedByteTable[c]
+		binary.LittleEndian.PutUint32(dst[pos:pos+4], entry.value)
+		pos += int(entry.width)
+	}
+
+	return dst[:pos]
 }
 
 func appendDefaultBytes(dst, data []byte) []byte {
