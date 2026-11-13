@@ -29,29 +29,6 @@ const defaultBaseURL = "type.googleapis.com"
 // This registry is intended to help resolve message type URLs in
 // google.protobuf.Any messages.
 type Registry struct {
-	// The default base URL to apply when registering types without a URL and
-	// when looking up types by name. The message name is prefixed with the
-	// base URL to form a full type URL.
-	//
-	// If not specified or empty, a default of "type.googleapis.com" will be
-	// used.
-	//
-	// If present, the PackageBaseURLMapper will be consulted first before
-	// applying this default.
-	DefaultBaseURL string
-	// A function that provides the base URL for a given package. When types
-	// are registered without a URL or looked up by name, this base URL is
-	// used to construct a full type URL.
-	//
-	// If it returns the empty string for a package, it is called again with
-	// the package's parent, and so on. When a type is looked up by name, its
-	// package is not known, so the function is first called with the name of
-	// the type's parent, which may be an enclosing message instead of a
-	// package.
-	//
-	// If not specified or nil, or if it returns the empty string, the
-	// DefaultBaseURL will be applied.
-	PackageBaseURLMapper func(packageName protoreflect.FullName) string
 	// A value that can retrieve type definitions at runtime. If non-nil,
 	// this will be used to resolve types for URLs that have not been
 	// explicitly registered.
@@ -70,11 +47,35 @@ type Registry struct {
 	// protoregistry.Files.
 	Fallback protoresolve.DescriptorResolver
 
-	mu          sync.RWMutex
-	typeCache   map[string]protoreflect.Descriptor
-	typeURLs    map[protoreflect.FullName]string
-	descProtos  map[protoreflect.Descriptor]proto.Message
-	pkgBaseURLs map[protoreflect.FullName]string
+	// A function that provides the base URL for a given package. When types
+	// are registered without a URL or looked up by name, this base URL is
+	// used to construct a full type URL.
+	//
+	// If it returns the empty string for a package, it is called again with
+	// the package's parent, and so on. When a type is looked up by name, its
+	// package is not known, so the function is first called with the name of
+	// the type's parent, which may be an enclosing message instead of a
+	// package.
+	//
+	// If not specified or nil, or if it returns the empty string, the
+	// DefaultBaseURL will be applied.
+	PackageBaseURLMapper func(packageName protoreflect.FullName) string
+	typeCache            map[string]protoreflect.Descriptor
+	typeURLs             map[protoreflect.FullName]string
+	descProtos           map[protoreflect.Descriptor]proto.Message
+	pkgBaseURLs          map[protoreflect.FullName]string
+	// The default base URL to apply when registering types without a URL and
+	// when looking up types by name. The message name is prefixed with the
+	// base URL to form a full type URL.
+	//
+	// If not specified or empty, a default of "type.googleapis.com" will be
+	// used.
+	//
+	// If present, the PackageBaseURLMapper will be consulted first before
+	// applying this default.
+	DefaultBaseURL string
+
+	mu sync.RWMutex
 	// Used to synthesize file names when source context information is insufficient
 	// when converting google.protobuf.Type, google.protobuf.Enum, and google.protobuf.Api
 	// to descriptors.

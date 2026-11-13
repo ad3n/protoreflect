@@ -29,6 +29,10 @@ func NewNotFoundError[T ~string](name T) error {
 //
 // See NewUnexpectedTypeError.
 type ErrUnexpectedType struct {
+	// Optional: the descriptor that was actually found. This may
+	// be nil. If non-nil, this is the descriptor instance that
+	// was resolved whose kind is Actual instead of Expecting.
+	Descriptor protoreflect.Descriptor
 	// Only one of URL or Name will be set, depending on whether
 	// the type was looked up by URL or name. These fields indicate
 	// the query that resulted in a descriptor of the wrong type.
@@ -38,10 +42,6 @@ type ErrUnexpectedType struct {
 	Expecting DescriptorKind
 	// The kind of descriptor that was actually found.
 	Actual DescriptorKind
-	// Optional: the descriptor that was actually found. This may
-	// be nil. If non-nil, this is the descriptor instance that
-	// was resolved whose kind is Actual instead of Expecting.
-	Descriptor protoreflect.Descriptor
 }
 
 // NewUnexpectedTypeError constructs a new *ErrUnexpectedType based

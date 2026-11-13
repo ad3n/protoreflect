@@ -47,29 +47,32 @@ func makeUnique(name string, existingNames map[string]struct{}) string {
 //
 // To create a new FileBuilder, use NewFile.
 type FileBuilder struct {
-	path string
-
-	Syntax protoreflect.Syntax
-	// Edition indicates which edition this file uses. It may only be
-	// set when Syntax is unset or set to protoreflect.Editions.
-	Edition descriptorpb.Edition
-
-	Package protoreflect.FullName
 	Options *descriptorpb.FileOptions
+
+	symbols map[protoreflect.Name]Builder
+
+	explicitDeps    map[*FileBuilder]struct{}
+	explicitImports map[protoreflect.FileDescriptor]struct{}
 
 	comments        Comments
 	SyntaxComments  Comments
 	PackageComments Comments
 
+	path string
+
+	Package protoreflect.FullName
+
 	messages   []*MessageBuilder
 	extensions []*FieldBuilder
 	enums      []*EnumBuilder
 	services   []*ServiceBuilder
-	symbols    map[protoreflect.Name]Builder
 
-	origExts        protoregistry.Types
-	explicitDeps    map[*FileBuilder]struct{}
-	explicitImports map[protoreflect.FileDescriptor]struct{}
+	origExts protoregistry.Types
+	// Edition indicates which edition this file uses. It may only be
+	// set when Syntax is unset or set to protoreflect.Editions.
+	Edition descriptorpb.Edition
+
+	Syntax protoreflect.Syntax
 }
 
 var _ Builder = (*FileBuilder)(nil)

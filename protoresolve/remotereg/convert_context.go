@@ -20,11 +20,10 @@ import (
 // convertContext provides the state for a resolution operation, accumulating details about
 // type descriptions and the files that contain them.
 type convertContext struct {
-	reg     *Registry
-	res     *remoteSubResolver
 	fetcher TypeFetcher
 
-	mu sync.Mutex
+	reg *Registry
+	res *remoteSubResolver
 	// map of file names to details regarding the files' contents
 	files map[string]*fileEntry
 	// map of type URLs to the file name that defines them
@@ -32,6 +31,8 @@ type convertContext struct {
 	// map of type URLs to descriptors found in the fallback resolver, for
 	// types that the fetcher didn't have
 	fallbackTypes map[string]protoreflect.Descriptor
+
+	mu sync.Mutex
 }
 
 func newConvertContext(reg *Registry, fetcher TypeFetcher) *convertContext {

@@ -59,15 +59,16 @@ const (
 // elementNotFoundError is the error returned by reflective operations where the
 // server does not recognize a given file name, symbol name, or extension.
 type elementNotFoundError struct {
-	path string
-	name protoreflect.FullName
-	kind elementKind
-	tag  protoreflect.FieldNumber // only used when kind == elementKindExtension
 
 	// only errors with a kind of elementKindFile will have a cause, which means
 	// the named file count not be resolved because of a dependency that could
 	// not be found where cause describes the missing dependency
 	cause *elementNotFoundError
+	path  string
+	name  protoreflect.FullName
+	kind  elementKind
+	tag   protoreflect.FieldNumber // only used when kind == elementKindExtension
+
 }
 
 type elementKind int
@@ -151,22 +152,24 @@ func (p *ProtocolError) Error() string {
 // Client is a client connection to a server for performing reflection calls
 // and resolving remote symbols.
 type Client struct {
+	descriptors         protoresolve.Registry
 	ctx                 context.Context
-	now                 func() time.Time
 	stubV1              refv1.ServerReflectionClient
 	stubV1Alpha         refv1alpha.ServerReflectionClient
-	allowMissing        bool
 	fallbackResolver    protodesc.Resolver
 	fallbackExtResolver protoregistry.ExtensionTypeResolver
 
+	now func() time.Time
+
 	*liveStream
 
-	cacheMu      sync.RWMutex
 	protosByName map[string]*descriptorpb.FileDescriptorProto
-	descriptors  protoresolve.Registry
 	// The names of the files in the response to each request that has been
 	// answered, keyed by a description of the request.
 	responseFiles map[string][]string
+
+	cacheMu      sync.RWMutex
+	allowMissing bool
 }
 
 // ClientOption is an option that can be used to configure the behavior of
@@ -797,11 +800,11 @@ func (cr *Client) Reset() {
 // can use runtime.AddCleanup with a Client to auto-close any remaining open
 // gRPC stream.
 type liveStream struct {
-	connMu      sync.Mutex
-	cancel      context.CancelFunc
-	stream      refv1.ServerReflection_ServerReflectionInfoClient
-	useV1Alpha  bool
 	lastTriedV1 time.Time
+	stream      refv1.ServerReflection_ServerReflectionInfoClient
+	cancel      context.CancelFunc
+	connMu      sync.Mutex
+	useV1Alpha  bool
 }
 
 // reset ensures that any active stream with the server is closed, releasing any

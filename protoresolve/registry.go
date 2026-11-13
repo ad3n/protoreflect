@@ -26,10 +26,10 @@ import (
 // descriptor proto into a [protoreflect.FileDescriptor] and then use
 // [Registry.ProtoFromFileDescriptor] to recover the original proto.
 type Registry struct {
-	mu     sync.RWMutex
-	files  protoregistry.Files
 	exts   map[protoreflect.FullName]map[protoreflect.FieldNumber]protoreflect.FieldDescriptor
 	protos map[protoreflect.FileDescriptor]*descriptorpb.FileDescriptorProto
+	files  protoregistry.Files
+	mu     sync.RWMutex
 }
 
 var _ Resolver = (*Registry)(nil)

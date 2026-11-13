@@ -198,8 +198,8 @@ func (c combinedPool) RangeExtensionsByMessage(message protoreflect.FullName, fn
 }
 
 type combinedWithPool struct {
-	combined
 	pool TypePool
+	combined
 }
 
 func (c *combinedWithPool) AsTypeResolver() TypeResolver {

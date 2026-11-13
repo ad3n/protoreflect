@@ -34,9 +34,9 @@ type elementAddr struct {
 }
 
 type elementAddrs struct {
-	addrs []elementAddr
 	dsc   any
 	opts  map[protoreflect.FieldNumber][]option
+	addrs []elementAddr
 }
 
 func (a elementAddrs) Len() int {
@@ -380,8 +380,8 @@ func (cso customSortOrder) Less(i, j int) bool {
 }
 
 type optionsByName struct {
-	addrs []elementAddr
 	opts  map[protoreflect.FieldNumber][]option
+	addrs []elementAddr
 }
 
 func (o optionsByName) Len() int {

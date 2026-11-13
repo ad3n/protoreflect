@@ -9,9 +9,10 @@ import (
 // corpusIndex is an index of all elements in a corpus of files. It is
 // used to compute the expected results of queries against a resolver.
 type corpusIndex struct {
-	files          []protoreflect.FileDescriptor
-	paths          map[string]struct{}
-	filesByPackage map[protoreflect.FullName][]protoreflect.FileDescriptor
+	paths               map[string]struct{}
+	filesByPackage      map[protoreflect.FullName][]protoreflect.FileDescriptor
+	extensionsByMessage map[protoreflect.FullName][]protoreflect.ExtensionDescriptor
+	files               []protoreflect.FileDescriptor
 	// All descriptors other than files.
 	all []protoreflect.Descriptor
 	// All messages, including map entries.
@@ -19,8 +20,7 @@ type corpusIndex struct {
 	enums      []protoreflect.EnumDescriptor
 	extensions []protoreflect.ExtensionDescriptor
 	// Normal (non-extension) fields.
-	fields              []protoreflect.FieldDescriptor
-	extensionsByMessage map[protoreflect.FullName][]protoreflect.ExtensionDescriptor
+	fields []protoreflect.FieldDescriptor
 }
 
 func newCorpusIndex(corpus []protoreflect.FileDescriptor) *corpusIndex {

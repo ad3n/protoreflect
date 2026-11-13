@@ -130,9 +130,9 @@ func (opts BuilderOptions) Build(b Builder) (protoreflect.Descriptor, error) {
 // the parsed proto source file. This can be used to create or preserve comments
 // (including documentation) for elements.
 type Comments struct {
-	LeadingDetachedComments []string
 	LeadingComment          string
 	TrailingComment         string
+	LeadingDetachedComments []string
 }
 
 func setComments(c *Comments, loc protoreflect.SourceLocation) {

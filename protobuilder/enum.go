@@ -21,14 +21,14 @@ type EnumRange [2]protoreflect.EnumNumber
 //
 // To create a new EnumBuilder, use NewEnum.
 type EnumBuilder struct {
+	Options *descriptorpb.EnumOptions
+	symbols map[protoreflect.Name]*EnumValueBuilder
 	baseBuilder
 
-	Options        *descriptorpb.EnumOptions
 	ReservedRanges []EnumRange
 	ReservedNames  []protoreflect.Name
 
-	values  []*EnumValueBuilder
-	symbols map[protoreflect.Name]*EnumValueBuilder
+	values []*EnumValueBuilder
 }
 
 var _ Builder = (*EnumBuilder)(nil)
@@ -365,11 +365,11 @@ func (eb *EnumBuilder) Clone() Builder {
 //
 // To create a new EnumValueBuilder, use NewEnumValue.
 type EnumValueBuilder struct {
+	Options *descriptorpb.EnumValueOptions
 	baseBuilder
 
 	number    protoreflect.EnumNumber
 	numberSet bool
-	Options   *descriptorpb.EnumValueOptions
 }
 
 var _ Builder = (*EnumValueBuilder)(nil)

@@ -20,6 +20,54 @@ import (
 // provide some control over how the resulting source file is constructed and
 // formatted.
 type Printer struct {
+
+	// The "less" function used to sort elements when printing. It is given two
+	// elements, a and b, and should return true if a is "less than" b. In this
+	// case, "less than" means that element a should appear earlier in the file
+	// than element b.
+	//
+	// If this field is nil, no custom sorting is done and the SortElements
+	// field is consulted to decide how to order the output. If this field is
+	// non-nil, the SortElements field is ignored and this function is called to
+	// order elements.
+	CustomSortFunction func(a, b Element) bool
+
+	// The indentation used. Any characters other than spaces or tabs will be
+	// replaced with spaces. If unset/empty, two spaces will be used.
+	Indent string
+
+	// A bitmask of comment types to omit. If unset, all comments will be
+	// included. Use CommentsAll to not print any comments.
+	OmitComments CommentType
+
+	// The number of options that trigger short options expressions to be
+	// rendered using multiple lines. Short options expressions are those
+	// found on fields and enum values, that use brackets ("[" and "]") and
+	// comma-separated options. If more options than this are present, they
+	// will be expanded to multiple lines (one option per line).
+	//
+	// If unset (e.g. if zero), a default threshold of 3 is used.
+	ShortOptionsExpansionThresholdCount int
+
+	// The length of printed options that trigger short options expressions to
+	// be rendered using multiple lines. If the short options contain more than
+	// one option and their printed length is longer than this threshold, they
+	// will be expanded to multiple lines (one option per line).
+	//
+	// If unset (e.g. if zero), a default threshold of 50 is used.
+	ShortOptionsExpansionThresholdLength int
+
+	// The length of a printed option value message literal that triggers the
+	// message literal to be rendered using multiple lines instead of using a
+	// compact single-line form. The message must include at least two fields
+	// or contain a field that is a nested message to be expanded.
+	//
+	// This value is further used to decide when to expand individual field
+	// values that are nested message literals or array literals (for repeated
+	// fields).
+	//
+	// If unset (e.g. if zero), a default threshold of 50 is used.
+	MessageLiteralExpansionThresholdLength int
 	// If true, comments are rendered using "/*" style comments. Otherwise, they
 	// are printed using "//" style line comments.
 	PreferMultiLineStyleComments bool
@@ -55,25 +103,6 @@ type Printer struct {
 	// Options for fields, enum values, and extension ranges are sorted by name,
 	// standard options before custom ones.
 	SortElements bool
-
-	// The "less" function used to sort elements when printing. It is given two
-	// elements, a and b, and should return true if a is "less than" b. In this
-	// case, "less than" means that element a should appear earlier in the file
-	// than element b.
-	//
-	// If this field is nil, no custom sorting is done and the SortElements
-	// field is consulted to decide how to order the output. If this field is
-	// non-nil, the SortElements field is ignored and this function is called to
-	// order elements.
-	CustomSortFunction func(a, b Element) bool
-
-	// The indentation used. Any characters other than spaces or tabs will be
-	// replaced with spaces. If unset/empty, two spaces will be used.
-	Indent string
-
-	// A bitmask of comment types to omit. If unset, all comments will be
-	// included. Use CommentsAll to not print any comments.
-	OmitComments CommentType
 
 	// If true, trailing comments that typically appear on the same line as an
 	// element (option, field, enum value, method) will be printed on a separate
@@ -131,35 +160,6 @@ type Printer struct {
 	// When printing fully-qualified names, they will be preceded by a dot, to
 	// avoid any ambiguity that they might be relative vs. fully-qualified.
 	ForceFullyQualifiedNames bool
-
-	// The number of options that trigger short options expressions to be
-	// rendered using multiple lines. Short options expressions are those
-	// found on fields and enum values, that use brackets ("[" and "]") and
-	// comma-separated options. If more options than this are present, they
-	// will be expanded to multiple lines (one option per line).
-	//
-	// If unset (e.g. if zero), a default threshold of 3 is used.
-	ShortOptionsExpansionThresholdCount int
-
-	// The length of printed options that trigger short options expressions to
-	// be rendered using multiple lines. If the short options contain more than
-	// one option and their printed length is longer than this threshold, they
-	// will be expanded to multiple lines (one option per line).
-	//
-	// If unset (e.g. if zero), a default threshold of 50 is used.
-	ShortOptionsExpansionThresholdLength int
-
-	// The length of a printed option value message literal that triggers the
-	// message literal to be rendered using multiple lines instead of using a
-	// compact single-line form. The message must include at least two fields
-	// or contain a field that is a nested message to be expanded.
-	//
-	// This value is further used to decide when to expand individual field
-	// values that are nested message literals or array literals (for repeated
-	// fields).
-	//
-	// If unset (e.g. if zero), a default threshold of 50 is used.
-	MessageLiteralExpansionThresholdLength int
 }
 
 // CommentType is a kind of comments in a proto source file. This can be used
@@ -243,16 +243,16 @@ type ident string
 
 // messageVal represents a message value for an option
 type messageVal struct {
-	// the package and scope in which the option value is defined
-	pkg, scope protoreflect.FullName
 	// the option value
 	msg proto.Message
+	// the package and scope in which the option value is defined
+	pkg, scope protoreflect.FullName
 }
 
 // option represents a resolved descriptor option
 type option struct {
-	name string
 	val  any
+	name string
 }
 
 // reservedRange represents a reserved range from a message or enum
@@ -262,8 +262,8 @@ type reservedRange struct {
 
 // extensionRange represents an extension range from a message
 type extensionRange struct {
-	start, end protoreflect.FieldNumber
 	opts       proto.Message
+	start, end protoreflect.FieldNumber
 }
 
 // PrintProtoFile prints the given single file descriptor to the given writer.

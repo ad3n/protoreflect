@@ -47,11 +47,11 @@ type dependencyResolver struct {
 	registry      protoresolve.Registry
 	resolvedRoots map[Builder]protoreflect.FileDescriptor
 	seen          map[Builder]struct{}
-	opts          BuilderOptions
 	// builtFiles has the descriptor proto for each file built from a
 	// FileBuilder, keyed by path. These are copies, taken before the file
 	// was registered, since registering may modify the proto.
 	builtFiles map[string]*descriptorpb.FileDescriptorProto
+	opts       BuilderOptions
 }
 
 func newResolver(opts BuilderOptions) *dependencyResolver {

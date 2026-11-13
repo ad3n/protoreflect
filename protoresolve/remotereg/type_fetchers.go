@@ -95,8 +95,8 @@ func CachingTypeFetcher(fetcher TypeFetcher) TypeFetcher {
 
 type cachingFetcher struct {
 	fetcher TypeFetcher
-	mu      sync.Mutex
 	entries map[string]*cachingFetcherEntry
+	mu      sync.Mutex
 }
 
 type cachingFetcherEntry struct {

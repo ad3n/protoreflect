@@ -15,11 +15,11 @@ import (
 //
 // There are numerous factory methods for creating FieldType instances.
 type FieldType struct {
-	fieldType       descriptorpb.FieldDescriptorProto_Type
 	foreignMsgType  protoreflect.MessageDescriptor
-	localMsgType    *MessageBuilder
 	foreignEnumType protoreflect.EnumDescriptor
+	localMsgType    *MessageBuilder
 	localEnumType   *EnumBuilder
+	fieldType       descriptorpb.FieldDescriptorProto_Type
 }
 
 // Kind returns the kind of this field type. If the kind is a message (or group)
@@ -208,10 +208,9 @@ func fieldTypeFromDescriptor(fld protoreflect.FieldDescriptor) *FieldType {
 //
 // To create an RPCType, see RPCTypeMessage and RPCTypeImportedMessage.
 type RPCType struct {
-	IsStream bool
-
 	foreignType protoreflect.MessageDescriptor
 	localType   *MessageBuilder
+	IsStream    bool
 }
 
 // RPCTypeMessage creates an RPCType that refers to the given message builder.

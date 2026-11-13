@@ -20,8 +20,8 @@ type FieldRange [2]protoreflect.FieldNumber
 // ExtensionRange represents a range of extension numbers. It is a FieldRange
 // that may have options.
 type ExtensionRange struct {
-	FieldRange
 	Options *descriptorpb.ExtensionRangeOptions
+	FieldRange
 }
 
 // MessageBuilder is a builder used to construct a protoreflect.MessageDescriptor. A
@@ -33,19 +33,19 @@ type ExtensionRange struct {
 //
 // To create a new MessageBuilder, use NewMessage.
 type MessageBuilder struct {
+	Options   *descriptorpb.MessageOptions
+	fieldTags map[protoreflect.FieldNumber]*FieldBuilder
+	symbols   map[protoreflect.Name]Builder
 	baseBuilder
 
-	Options         *descriptorpb.MessageOptions
 	ExtensionRanges []ExtensionRange
 	ReservedRanges  []FieldRange
 	ReservedNames   []protoreflect.Name
 
 	fieldsAndOneofs  []Builder
-	fieldTags        map[protoreflect.FieldNumber]*FieldBuilder
 	nestedMessages   []*MessageBuilder
 	nestedExtensions []*FieldBuilder
 	nestedEnums      []*EnumBuilder
-	symbols          map[protoreflect.Name]Builder
 }
 
 var _ Builder = (*MessageBuilder)(nil)

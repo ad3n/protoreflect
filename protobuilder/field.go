@@ -24,8 +24,7 @@ import (
 // NewExtension, or NewExtensionImported (depending on the type of field being
 // built).
 type FieldBuilder struct {
-	baseBuilder
-	number protoreflect.FieldNumber
+	foreignExtendee protoreflect.MessageDescriptor
 
 	// msgType is populated for fields that have a "private" message type that
 	// isn't expected to be referenced elsewhere. This happens for map fields,
@@ -34,7 +33,15 @@ type FieldBuilder struct {
 	msgType   *MessageBuilder
 	fieldType *FieldType
 
-	Options     *descriptorpb.FieldOptions
+	Options       *descriptorpb.FieldOptions
+	localExtendee *MessageBuilder
+	baseBuilder
+
+	Default  string
+	JSONName string
+
+	number protoreflect.FieldNumber
+
 	Cardinality protoreflect.Cardinality
 
 	// Proto3Optional indicates if the field is a proto3 optional field. This
@@ -48,12 +55,6 @@ type FieldBuilder struct {
 	// "editions", set the field_presence field of the features option in
 	// Options.
 	Proto3Optional bool
-
-	Default  string
-	JSONName string
-
-	foreignExtendee protoreflect.MessageDescriptor
-	localExtendee   *MessageBuilder
 }
 
 var _ Builder = (*FieldBuilder)(nil)
@@ -678,12 +679,12 @@ func (e extensionTypeDescriptor) Descriptor() protoreflect.ExtensionDescriptor {
 //
 // To create a new OneofBuilder, use NewOneof.
 type OneofBuilder struct {
-	baseBuilder
-
 	Options *descriptorpb.OneofOptions
 
-	choices []*FieldBuilder
 	symbols map[protoreflect.Name]*FieldBuilder
+	baseBuilder
+
+	choices []*FieldBuilder
 }
 
 var _ Builder = (*OneofBuilder)(nil)

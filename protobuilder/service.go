@@ -14,12 +14,12 @@ import (
 //
 // To create a new ServiceBuilder, use NewService.
 type ServiceBuilder struct {
-	baseBuilder
-
 	Options *descriptorpb.ServiceOptions
 
-	methods []*MethodBuilder
 	symbols map[protoreflect.Name]*MethodBuilder
+	baseBuilder
+
+	methods []*MethodBuilder
 }
 
 var _ Builder = (*ServiceBuilder)(nil)
@@ -266,11 +266,10 @@ func (sb *ServiceBuilder) Clone() Builder {
 //
 // To create a new MethodBuilder, use NewMethod.
 type MethodBuilder struct {
-	baseBuilder
-
 	Options  *descriptorpb.MethodOptions
 	ReqType  *RPCType
 	RespType *RPCType
+	baseBuilder
 }
 
 var _ Builder = (*MethodBuilder)(nil)
